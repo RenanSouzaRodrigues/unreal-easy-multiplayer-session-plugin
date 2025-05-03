@@ -40,7 +40,7 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 
 	// If there is a valid online game session already, this mean that I need to destroy it to be able create a new session.
 	// This validation exists only to assure that we have only one valid online game session. -Renan
-	auto existingSession = this->onlineSubsystemSessionInterface->GetNamedSession(NAME_GameSession);
+	FNamedOnlineSession* existingSession = this->onlineSubsystemSessionInterface->GetNamedSession(NAME_GameSession);
 	if (existingSession != nullptr) this->onlineSubsystemSessionInterface->DestroySession(NAME_GameSession);
 
 	// I will store this into its delegate handle so this way I can 'unbind' this later. -Renan
