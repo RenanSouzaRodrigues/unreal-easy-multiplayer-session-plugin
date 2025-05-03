@@ -1,0 +1,34 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Easy Multiplayer Session",
+	"Description": "This plugin allows you to create multiplayer sessions using Steam as its provider. This plugin can handle Ping, Lag compensation, Client-Side Prediction, Lag simulation, server side rewinding time, cheating prevention and some other cool stuff. Enjoy",
+	"Category": "Multiplayer",
+	"CreatedBy": "Renan Souza Rodrigues",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "EasyMultiplayerSession",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "OnlineSubsystem",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemSteam",
+			"Enabled": true
+		}
+	]
+}
