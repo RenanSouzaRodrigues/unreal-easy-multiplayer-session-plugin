@@ -35,47 +35,46 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 	// Check if the online subsystem session interface I have is valid. If not I'm simply returning void. -Renan
 	if (!this->onlineSubsystemSessionInterface.IsValid()) {
 		UEMSUtils::ShowDebugMessage(TEXT("Online Subsytem Session Interface is invalid, Something went wrong on the engine lifecycle."), FColor::Red);
+		this->OnSessionCreatedEvent.Broadcast(false);
 		return;
 	};
 
-	// If there is a valid online game session already, this mean that I need to destroy it to be able create a new session.
-	// This validation exists only to assure that we have only one valid online game session. -Renan
+	// If there is a valid online game session already, it means that I need to destroy it to be able to create a new session.
+	// This validation exists only to ensure that we have only one valid online game session. -Renan
 	FNamedOnlineSession* existingSession = this->onlineSubsystemSessionInterface->GetNamedSession(NAME_GameSession);
 	if (existingSession != nullptr) this->onlineSubsystemSessionInterface->DestroySession(NAME_GameSession);
 
-	// I will store this into its delegate handle so this way I can 'unbind' this later. -Renan
+	// I will store this into this delegate handle so this way I can 'unbind' this later. -Renan
 	this->CreateSessionDelegateHandle = this->onlineSubsystemSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(this->OnCreateSessionEvent);
 
-	// This settings will define the session creation. I think is a good ideia to convert all this information after in a data asset that can override
+	// This settings will define the session creation. I think is a good ideia to convert all this information later in a data asset that can override
 	// these basic configurations. This way I can define at any moment how these settings are defined. -Renan
-	// TODO: Create a data asset to enable further configurations of these online settings;
-	this->lastOnlineSessionSettings = MakeShareable(new FOnlineSessionSettings());
-	this->lastOnlineSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
-	this->lastOnlineSessionSettings->NumPublicConnections = numberOfPublicConnections;
-	this->lastOnlineSessionSettings->bAllowJoinInProgress = true;
-	this->lastOnlineSessionSettings->bAllowJoinViaPresence = true;
-	this->lastOnlineSessionSettings->bAllowInvites = true;
-	this->lastOnlineSessionSettings->bAllowJoinViaPresenceFriendsOnly = false;
-	this->lastOnlineSessionSettings->bShouldAdvertise = true;
-	this->lastOnlineSessionSettings->bUsesPresence = true;
-	this->lastOnlineSessionSettings->Set(FName("MatchType"), matchType, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	// TODO: Create a data asset to enable further configurations of these online settings. Also, make a function to override the settings that can be called at any time;
+	this->onlineSessionSettings = MakeShareable(new FOnlineSessionSettings());
+	this->onlineSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
+	this->onlineSessionSettings->NumPublicConnections = numberOfPublicConnections;
+	this->onlineSessionSettings->bAllowJoinInProgress = true;
+	this->onlineSessionSettings->bAllowJoinViaPresence = true;
+	this->onlineSessionSettings->bAllowInvites = true;
+	this->onlineSessionSettings->bAllowJoinViaPresenceFriendsOnly = false;
+	this->onlineSessionSettings->bShouldAdvertise = true;
+	this->onlineSessionSettings->bUsesPresence = true;
+	this->onlineSessionSettings->Set(FName("MatchType"), matchType, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-	// With the ULocalPlayer reference I can grab the preferred unique net id. It is required to create a new online session.
-	// This function also returns void if the session was not correctly created, but this function as a whole could return a boolean
-	// This way the developer can validate if the session was created on the right way. But at the same time I will be exposing a lot
-	// more of this API than necessary. Let's see if this argument still stands after a while. -Renan
-	if (const ULocalPlayer* hostServerPlayer = this->GetWorld()->GetFirstLocalPlayerFromController()) {
-		const bool createdSession = this->onlineSubsystemSessionInterface->CreateSession(
-			*hostServerPlayer->GetPreferredUniqueNetId(),
-			NAME_GameSession,
-			*this->lastOnlineSessionSettings
-		);
+	// With the ULocalPlayer reference I can grab the preferred unique net id. It is required to create a new online session. -Renan
+	const ULocalPlayer* hostPlayer = this->GetWorld()->GetFirstLocalPlayerFromController();
+	if (!hostPlayer) {
+		UEMSUtils::ShowDebugMessage(TEXT("No local player controller found. Aborting session creation for now. A Local Player Controller is required in order to create a new Session"), FColor::Red);
+		this->onlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
+		this->OnSessionCreatedEvent.Broadcast(false);
+		return;
+	}
 
-		if (!createdSession) {
-			UEMSUtils::ShowDebugMessage(TEXT("Session was not created, aborting process and cleaning delegates"));
-			// If the session was not created, Here I can remove the delegate previously binded, this way I can aways call it again. -Renan
-			this->onlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
-		}
+	// If the session is not created, then is probably a problem with the engine lifecycle. -Renan
+	if (!this->onlineSubsystemSessionInterface->CreateSession(*hostPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *this->onlineSessionSettings)) {
+		UEMSUtils::ShowDebugMessage(TEXT("Session was not created, aborting process and cleaning delegates"));
+		this->onlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
+		this->OnSessionCreatedEvent.Broadcast(false);
 	}
 }
 
@@ -88,7 +87,13 @@ void UEasyMultiplayerSubsystem::StartSession() {}
 void UEasyMultiplayerSubsystem::DestroySession() {}
 
 // Event Listeners
-void UEasyMultiplayerSubsystem::OnCreateSessionEventListenerCallback(FName createdSessionName, bool bWasSuccessfullCreated) {}
+void UEasyMultiplayerSubsystem::OnCreateSessionEventListenerCallback(FName createdSessionName, bool bWasSuccessfullCreated) {
+	if (this->onlineSubsystemSessionInterface) {
+		this->onlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
+	}
+	this->OnSessionCreatedEvent.Broadcast(bWasSuccessfullCreated);
+	UEMSUtils::ShowDebugMessage(TEXT("Session created successfully!"), FColor::Green);
+}
 
 void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSuccessfull) {}
 

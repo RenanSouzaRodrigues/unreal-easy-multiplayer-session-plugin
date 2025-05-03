@@ -37,9 +37,9 @@ private:
 	IOnlineSessionPtr onlineSubsystemSessionInterface;
 
 	// This settings are used to store the session settings of the last online session I create. -Renan
-	TSharedPtr<FOnlineSessionSettings> lastOnlineSessionSettings;
+	TSharedPtr<FOnlineSessionSettings> onlineSessionSettings;
 
-	// These events or delegates are called when the functions finish their execution. -Renan
+	// These events or delegates are called when the functions finish their execution. They need to be constructed -Renan
 	FOnCreateSessionCompleteDelegate OnCreateSessionEvent;
 	FOnFindSessionsCompleteDelegate OnFindSessionEvent;
 	FOnJoinSessionCompleteDelegate OnJoinSessionEvent;
@@ -56,6 +56,12 @@ private:
 public:
 	UEasyMultiplayerSubsystem();
 
+	/**
+	 * Method that creates a new online multiplayer session. This method also fires up an event in case the session was
+	 * successfully created or not. You can bind Custom Event Listeners to the OnSessionCreatedEvent to handle any use case.
+	 * @param numberOfPublicConnections Number of public available slot for players to join.
+	 * @param matchType Name of the Session Match
+	 */
 	UFUNCTION(BlueprintCallable)
 	void CreateSession(int32 numberOfPublicConnections, FString matchType);
 
