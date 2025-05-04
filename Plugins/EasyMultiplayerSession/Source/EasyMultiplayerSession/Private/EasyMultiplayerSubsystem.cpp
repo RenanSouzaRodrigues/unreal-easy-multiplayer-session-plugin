@@ -1,6 +1,5 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "EasyMultiplayerSubsystem.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
@@ -31,13 +30,13 @@ UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 	this->OnlineSubsystemSessionInterface = onlineSubsystemReference->GetSessionInterface();
 }
 
-void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, FString matchType) {
-	// Check if the online subsystem session interface I have is valid. If not I'm simply returning void. -Renan
-	if (!this->OnlineSubsystemSessionInterface.IsValid()) {
-		UEMSUtils::ShowDebugMessage(TEXT("Online Subsytem Session Interface is invalid, Something went wrong on the engine lifecycle."), FColor::Red);
+void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, FString matchTypeName) {
+	// Check if the online subsystem session interface I have is valid. If not I'm simply returning void and
+	// broadcasting the event with false value. -Renan
+	if (!this->OnlineSubsystemInterfaceIsValid()) {
 		this->OnSessionCreatedEvent.Broadcast(false);
 		return;
-	};
+	}
 
 	// If there is a valid online game session already, it means that I need to destroy it to be able to create a new session.
 	// This validation exists only to ensure that we have only one valid online game session. -Renan
@@ -60,18 +59,23 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 	this->OnlineSessionSettings->bShouldAdvertise = true;
 	this->OnlineSessionSettings->bUsesPresence = true;
 	this->OnlineSessionSettings->bUseLobbiesIfAvailable = true;
-	this->OnlineSessionSettings->Set(FName("MatchType"), matchType, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	this->OnlineSessionSettings->Set(MATCH_TYPE, matchTypeName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-	// With the ULocalPlayer reference I can grab the preferred unique net id. It is required to create a new online session. -Renan
+	// With the ULocalPlayer reference I can grab the preferred unique net id. It is required to create a new online session.
+	// without a local player controller, it is impossible to track who is the owner of the session. -Renan
 	const ULocalPlayer* hostPlayer = this->GetWorld()->GetFirstLocalPlayerFromController();
 	if (!hostPlayer) {
-		UEMSUtils::ShowDebugMessage(TEXT("No local player controller found. Aborting session creation for now. A Local Player Controller is required in order to create a new Session"), FColor::Red);
+		UEMSUtils::ShowDebugMessage(
+			TEXT("No local player controller found. Aborting Session creation. A Local Player Controller is required in order to create a new Session"),
+			FColor::Red
+		);
 		this->OnlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
 		this->OnSessionCreatedEvent.Broadcast(false);
 		return;
 	}
 
-	// If the session is not created, then is probably a problem with the engine lifecycle. -Renan
+	// If the session is not created, then is probably a problem with the engine lifecycle.
+	// I think this is a very impossible scenario, but we never know. Better safe then sorry. -Renan
 	if (!this->OnlineSubsystemSessionInterface->CreateSession(*hostPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *this->OnlineSessionSettings)) {
 		UEMSUtils::ShowDebugMessage(TEXT("Session was not created, aborting process and cleaning delegates"));
 		this->OnlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
@@ -80,31 +84,34 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 }
 
 void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult) {
-	if (!this->OnlineSubsystemSessionInterface.IsValid()) {
-		UEMSUtils::ShowDebugMessage(TEXT("Online Subsytem Session Interface is invalid, Something went wrong on the engine lifecycle."), FColor::Red);
+	// Online subsystem session interface validation. It is good to aways be sure. -Renan
+	if (!this->OnlineSubsystemInterfaceIsValid()) {
+		this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
 		return;
 	}
-	
+
+	// Same as the create session method. -Renan
 	this->FindSessionDelegateHandle = this->OnlineSubsystemSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(this->OnFindSessionEvent);
 
 	this->OnlineSessionSearch = MakeShareable(new FOnlineSessionSearch);
 	this->OnlineSessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
 	this->OnlineSessionSearch->MaxSearchResults = maxOnlineSessionsSearchResult;
 	this->OnlineSessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
-
-	const ULocalPlayer* localPlayer = this->GetWorld()->GetFirstLocalPlayerFromController();
-	if (localPlayer) {
-		const bool sessionsFound = this->OnlineSubsystemSessionInterface->FindSessions(
-			*localPlayer->GetPreferredUniqueNetId(),
-			this->OnlineSessionSearch.ToSharedRef()
-		);
-
-		if (!sessionsFound) {
-			this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
-			this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
-		}
-	}
 	
+	const ULocalPlayer* localPlayer = this->GetWorld()->GetFirstLocalPlayerFromController();
+
+	// Same for the creation method. I need the local player controller here to be able to join sessions on the future. -Renan
+	if (!localPlayer) {
+		UEMSUtils::ShowDebugMessage(TEXT("No local player controller found. Aborting Find Session Process. A Local Player Controller is required in order search for sessions"), FColor::Red);
+		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
+		this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
+		return;
+	}
+
+	if (!this->OnlineSubsystemSessionInterface->FindSessions(*localPlayer->GetPreferredUniqueNetId(), this->OnlineSessionSearch.ToSharedRef())) {
+		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
+		this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
+	}
 }
 
 void UEasyMultiplayerSubsystem::JoinSession(const FOnlineSessionSearchResult& onlineSessionResult) {}
@@ -118,6 +125,7 @@ void UEasyMultiplayerSubsystem::OnCreateSessionEventListenerCallback(FName creat
 	if (this->OnlineSubsystemSessionInterface) {
 		this->OnlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
 	}
+	
 	this->OnSessionCreatedEvent.Broadcast(bWasSuccessfullCreated);
 	UEMSUtils::ShowDebugMessage(TEXT("Session created successfully!"), FColor::Green);
 }
@@ -127,8 +135,11 @@ void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSucc
 		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
 	}
 
-	auto sessionResult = this->OnlineSessionSearch->SearchResults;
-	this->OnSessionFoundEvent.Broadcast(sessionResult, bWasSuccessfull);
+	// In case there is no session results, broadcast the event with no success. -Renan
+	if (this->OnlineSessionSearch->SearchResults.Num() == 0) this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
+	
+	this->OnSessionFoundEvent.Broadcast(this->OnlineSessionSearch->SearchResults, bWasSuccessfull);
+	UEMSUtils::ShowDebugMessage(TEXT("Find Session Results returned successfully!"), FColor::Green);
 }
 
 void UEasyMultiplayerSubsystem::OnJoinSessionEventListenerCallback(FName joinedSessionName, EOnJoinSessionCompleteResult::Type joinResultType) {
@@ -141,4 +152,12 @@ void UEasyMultiplayerSubsystem::OnStartSessionEventListenerCallback(FName sessio
 
 void UEasyMultiplayerSubsystem::OnDestroySessionEventListenerCallback(FName sessionName, bool bWasSuccessful) {
 	
+}
+
+bool UEasyMultiplayerSubsystem::OnlineSubsystemInterfaceIsValid() const {
+	if (this->OnlineSubsystemSessionInterface.IsValid()) {
+		UEMSUtils::ShowDebugMessage(TEXT("Online Subsytem Session Interface is invalid, Something went wrong on the engine lifecycle."), FColor::Red);
+		return false;
+	}
+	return true;
 }

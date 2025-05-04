@@ -1,12 +1,12 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
-
 #include "EasyMultiplayerSubsystem.generated.h"
+
+#define MATCH_TYPE FName("MatchType")
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEasyMultiplayerDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerSessionCreatedDelegate, bool, bSessionCreated);
@@ -18,7 +18,6 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerJoinSessionDelegate, EOnJoin
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerStartSessionDeletage, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerDestroySessionDelegate, bool, bSuccess);
-
 
 UCLASS()
 class EASYMULTIPLAYERSESSION_API UEasyMultiplayerSubsystem : public UGameInstanceSubsystem {
@@ -38,7 +37,6 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FEasyMultiplayerDestroySessionDelegate OnSessionDestroyedEvent;
-	
 	
 private:
 	// As I can see this is just a typedef of some sort of TMap. But this is fine. -Renan
@@ -69,13 +67,18 @@ public:
 
 	/**
 	 * Method that creates a new online multiplayer session. This method also fires up an event in case the session was
-	 * successfully created or not. You can bind Custom Event Listeners to the OnSessionCreatedEvent to handle any use case.
+	 * successfully created or not. You can bind a Custom Event Listeners to the OnSessionCreatedEvent to handle any use case.
 	 * @param numberOfPublicConnections Number of public available slot for players to join.
-	 * @param matchType Name of the Session Match
+	 * @param matchTypeName Name of the Session Match Type
 	 */
 	UFUNCTION(BlueprintCallable)
-	void CreateSession(int32 numberOfPublicConnections, FString matchType);
+	void CreateSession(int32 numberOfPublicConnections = 16, FString matchTypeName = "FreeForAll");
 
+	/**
+	 * Method to look for available sessions. This method broadcast a delegate with all the found sessions. You can bind a
+	 * Custom Event Listener to the OnSessionFoundEvent to handle the find session result.
+	 * @param maxOnlineSessionsSearchResult Max number of sessions to return.
+	 */
 	UFUNCTION(BlueprintCallable)
 	void FindSession(int32 maxOnlineSessionsSearchResult);
 
@@ -95,4 +98,7 @@ protected:
 	void OnJoinSessionEventListenerCallback(FName joinedSessionName, EOnJoinSessionCompleteResult::Type joinResultType);
 	void OnStartSessionEventListenerCallback(FName sessionName, bool bWasSuccessful);
 	void OnDestroySessionEventListenerCallback(FName sessionName, bool bWasSuccessful);
+
+private:
+	bool OnlineSubsystemInterfaceIsValid() const;
 };
