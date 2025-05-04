@@ -1,8 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "GameModes/EMSLobbyGameModeBase.h"
-
 #include "EasyMultiplayerSession/EMSUtils.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
