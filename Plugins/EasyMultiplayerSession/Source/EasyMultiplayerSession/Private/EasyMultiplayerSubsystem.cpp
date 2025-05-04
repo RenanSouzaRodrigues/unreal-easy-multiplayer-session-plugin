@@ -33,7 +33,7 @@ UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, FString matchTypeName) {
 	// Check if the online subsystem session interface I have is valid. If not I'm simply returning void and
 	// broadcasting the event with false value. -Renan
-	if (!this->OnlineSubsystemInterfaceIsValid()) {
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
 		this->OnSessionCreatedEvent.Broadcast(false);
 		return;
 	}
@@ -85,7 +85,7 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 
 void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult) {
 	// Online subsystem session interface validation. It is good to aways be sure. -Renan
-	if (!this->OnlineSubsystemInterfaceIsValid()) {
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
 		this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
 		return;
 	}
@@ -108,13 +108,49 @@ void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult)
 		return;
 	}
 
+	// If there is any error when the subsystem tries to retrieve the list of sessions to join, I simple send a log and broadcast a false response. -Renan
 	if (!this->OnlineSubsystemSessionInterface->FindSessions(*localPlayer->GetPreferredUniqueNetId(), this->OnlineSessionSearch.ToSharedRef())) {
 		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
 		this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
 	}
 }
 
-void UEasyMultiplayerSubsystem::JoinSession(const FOnlineSessionSearchResult& onlineSessionResult) {}
+void UEasyMultiplayerSubsystem::JoinSession(const FOnlineSessionSearchResult& onlineSessionSearchResult) {
+	// I first validate the session search result because, if this is null or invalid there is no reason to try join this session. -Renan
+	if (!onlineSessionSearchResult.IsValid()) {
+		 UEMSUtils::ShowDebugMessage(TEXT("Unable to Join Session, the search result is invalid"));
+		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::SessionDoesNotExist);
+		return;
+	}
+
+	// Simple Validation. -Renan
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		// I think I can use this EOnJoinSessionCompleteResult::UnknownError for any generic error. Just like this one. -Renan
+		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
+		return;
+	};
+
+	// TODO: Validate if the session is full;
+
+	// TODO: Validate if the session is private;
+	
+	this->JoinSessionDelegateHandle = this->OnlineSubsystemSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(this->OnJoinSessionEvent);
+
+	const ULocalPlayer* localPlayer = this->GetWorld()->GetFirstLocalPlayerFromController();
+	if (!localPlayer) {
+		UEMSUtils::ShowDebugMessage(TEXT("No local player controller found. Aborting Join Session Process. A Local Player Controller is required in order join a session"), FColor::Red);
+		this->OnlineSubsystemSessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(this->JoinSessionDelegateHandle);
+		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
+		return;
+	}
+	
+	if (!this->OnlineSubsystemSessionInterface->JoinSession(*localPlayer->GetPreferredUniqueNetId(), FName("Session Name"), onlineSessionSearchResult)) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to join session for some error"), FColor::Red);
+		this->OnlineSubsystemSessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(this->JoinSessionDelegateHandle);
+		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
+		return;
+	}
+}
 
 void UEasyMultiplayerSubsystem::StartSession() {}
 
@@ -135,7 +171,8 @@ void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSucc
 		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
 	}
 
-	// In case there is no session results, broadcast the event with no success. -Renan
+	// In case there is no session results but the process still returns a success, broadcast the event with no success because there is no list
+	// of sessions to join. I don't know if broadcasting a false value is a good choice. But at this point, I think is enough. -Renan
 	if (this->OnlineSessionSearch->SearchResults.Num() == 0) this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
 	
 	this->OnSessionFoundEvent.Broadcast(this->OnlineSessionSearch->SearchResults, bWasSuccessfull);
@@ -143,7 +180,9 @@ void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSucc
 }
 
 void UEasyMultiplayerSubsystem::OnJoinSessionEventListenerCallback(FName joinedSessionName, EOnJoinSessionCompleteResult::Type joinResultType) {
-	
+	if (!this->IsOnlineSubsystemInterfaceValid()) return;
+	this->OnlineSubsystemSessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(this->JoinSessionDelegateHandle);
+	this->OnSessionJoinedEvent.Broadcast(joinResultType);
 }
 
 void UEasyMultiplayerSubsystem::OnStartSessionEventListenerCallback(FName sessionName, bool bWasSuccessful) {
@@ -154,7 +193,7 @@ void UEasyMultiplayerSubsystem::OnDestroySessionEventListenerCallback(FName sess
 	
 }
 
-bool UEasyMultiplayerSubsystem::OnlineSubsystemInterfaceIsValid() const {
+bool UEasyMultiplayerSubsystem::IsOnlineSubsystemInterfaceValid() const {
 	if (this->OnlineSubsystemSessionInterface.IsValid()) {
 		UEMSUtils::ShowDebugMessage(TEXT("Online Subsytem Session Interface is invalid, Something went wrong on the engine lifecycle."), FColor::Red);
 		return false;

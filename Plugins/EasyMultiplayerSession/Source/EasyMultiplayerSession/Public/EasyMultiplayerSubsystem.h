@@ -83,7 +83,7 @@ public:
 	void FindSession(int32 maxOnlineSessionsSearchResult);
 
 	UFUNCTION(BlueprintCallable)
-	void JoinSession(const FOnlineSessionSearchResult& onlineSessionResult);
+	void JoinSession(const FOnlineSessionSearchResult& onlineSessionSearchResult);
 
 	UFUNCTION(BlueprintCallable)
 	void StartSession();
@@ -100,5 +100,5 @@ protected:
 	void OnDestroySessionEventListenerCallback(FName sessionName, bool bWasSuccessful);
 
 private:
-	bool OnlineSubsystemInterfaceIsValid() const;
+	bool IsOnlineSubsystemInterfaceValid() const;
 };
