@@ -144,7 +144,7 @@ void UEasyMultiplayerSubsystem::JoinSession(const FOnlineSessionSearchResult& on
 		return;
 	}
 	
-	if (!this->OnlineSubsystemSessionInterface->JoinSession(*localPlayer->GetPreferredUniqueNetId(), FName("Session Name"), onlineSessionSearchResult)) {
+	if (!this->OnlineSubsystemSessionInterface->JoinSession(*localPlayer->GetPreferredUniqueNetId(), NAME_GameSession, onlineSessionSearchResult)) {
 		UEMSUtils::ShowDebugMessage(TEXT("Unable to join session for some error"), FColor::Red);
 		this->OnlineSubsystemSessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(this->JoinSessionDelegateHandle);
 		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);

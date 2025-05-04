@@ -82,6 +82,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void FindSession(int32 maxOnlineSessionsSearchResult);
 
+	/**
+	 * Method used to join a session
+	 * @param onlineSessionSearchResult The session result that can be found using EasyMultiplayerSession::FindSessions method
+	 */
 	UFUNCTION(BlueprintCallable)
 	void JoinSession(const FOnlineSessionSearchResult& onlineSessionSearchResult);
 
