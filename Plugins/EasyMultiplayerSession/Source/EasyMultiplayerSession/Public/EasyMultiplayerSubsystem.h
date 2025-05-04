@@ -11,6 +11,15 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEasyMultiplayerDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerSessionCreatedDelegate, bool, bSessionCreated);
 
+// This delegates needs to be converted to blueprint native events so I can call this, or any other developer to be honest, at any point
+// and also bind blueprint custom events to these delegates. -Dallai
+DECLARE_MULTICAST_DELEGATE_TwoParams(FEasyMultiplayerFindSessionDelegate, const TArray<FOnlineSessionSearchResult> &searchResults, bool bSuccess);
+DECLARE_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerJoinSessionDelegate, EOnJoinSessionCompleteResult::Type joinResult);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerStartSessionDeletage, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerDestroySessionDelegate, bool, bSuccess);
+
+
 UCLASS()
 class EASYMULTIPLAYERSESSION_API UEasyMultiplayerSubsystem : public UGameInstanceSubsystem {
 	GENERATED_BODY()
@@ -19,25 +28,27 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FEasyMultiplayerSessionCreatedDelegate OnSessionCreatedEvent;
 
-	UPROPERTY(BlueprintAssignable)
-	FEasyMultiplayerDelegate OnSessionFoundEvent;
-	
-	UPROPERTY(BlueprintAssignable)
-	FEasyMultiplayerDelegate OnSessionJoinedEvent;
+	// this both events can't be assinable right now. -Dallai
+	// TODO: Make this events blueprint assinable
+	FEasyMultiplayerFindSessionDelegate OnSessionFoundEvent;
+	FEasyMultiplayerJoinSessionDelegate OnSessionJoinedEvent;
 
 	UPROPERTY(BlueprintAssignable)
-	FEasyMultiplayerDelegate OnSessionStartedEvent;
+	FEasyMultiplayerStartSessionDeletage OnSessionStartedEvent;
 
 	UPROPERTY(BlueprintAssignable)
-	FEasyMultiplayerDelegate OnSessionDestroyedEvent;
+	FEasyMultiplayerDestroySessionDelegate OnSessionDestroyedEvent;
 	
 	
 private:
 	// As I can see this is just a typedef of some sort of TMap. But this is fine. -Renan
-	IOnlineSessionPtr onlineSubsystemSessionInterface;
+	IOnlineSessionPtr OnlineSubsystemSessionInterface;
 
 	// This settings are used to store the session settings of the last online session I create. -Renan
-	TSharedPtr<FOnlineSessionSettings> onlineSessionSettings;
+	TSharedPtr<FOnlineSessionSettings> OnlineSessionSettings;
+
+	// This session search is used to configure and retain everything that returns from the find session. -Renan
+	TSharedPtr<FOnlineSessionSearch> OnlineSessionSearch;
 
 	// These events or delegates are called when the functions finish their execution. They need to be constructed -Renan
 	FOnCreateSessionCompleteDelegate OnCreateSessionEvent;
