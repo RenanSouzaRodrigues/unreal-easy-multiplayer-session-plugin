@@ -12,7 +12,7 @@ void AEMSLobbyGameModeBase::PostLogin(APlayerController* NewPlayer) {
 
 	if (this->GameState) {
 		int32 numberOfPlayers = this->GameState.Get()->PlayerArray.Num();
-		UEMSUtils::ShowDebugMessage(FString::Printf(TEXT("Current number of players: %d"), numberOfPlayers), FColor::Yellow);
+		UEMSUtils::ShowPersistentDebugMessage(FString::Printf(TEXT("Current number of players: %d"), numberOfPlayers), FColor::Yellow);
 	}
 
 	if (APlayerState* playerState = NewPlayer->GetPlayerState<APlayerState>()) {
@@ -25,7 +25,7 @@ void AEMSLobbyGameModeBase::Logout(AController* Exiting) {
 
 	if (this->GameState) {
 		int32 numberOfPlayers = this->GameState.Get()->PlayerArray.Num() - 1;
-		UEMSUtils::ShowDebugMessage(FString::Printf(TEXT("Current number of players: %d"), numberOfPlayers), FColor::Yellow);
+		UEMSUtils::ShowPersistentDebugMessage(FString::Printf(TEXT("Current number of players: %d"), numberOfPlayers), FColor::Yellow);
 	}
 	
 	if (APlayerState* playerState = Exiting->GetPlayerState<APlayerState>()) {
