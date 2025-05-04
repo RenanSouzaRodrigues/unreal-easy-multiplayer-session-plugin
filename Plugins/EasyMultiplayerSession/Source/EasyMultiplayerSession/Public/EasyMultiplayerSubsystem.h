@@ -48,7 +48,7 @@ private:
 	// This session search is used to configure and retain everything that returns from the find session. -Renan
 	TSharedPtr<FOnlineSessionSearch> OnlineSessionSearch;
 
-	// These events or delegates are called when the functions finish their execution. They need to be constructed -Renan
+	// These events or delegates are called when the functions finish their execution. They need to be constructed first -Renan
 	FOnCreateSessionCompleteDelegate OnCreateSessionEvent;
 	FOnFindSessionsCompleteDelegate OnFindSessionEvent;
 	FOnJoinSessionCompleteDelegate OnJoinSessionEvent;
