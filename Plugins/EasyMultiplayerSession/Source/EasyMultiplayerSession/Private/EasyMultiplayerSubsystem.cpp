@@ -27,6 +27,13 @@ UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 		return;
 	}
 
+	// This is a debug message to help visualize what is the subsystem used for the online sessions.
+	// Usually, playing in editor, the subsystem will be aways NULL. this is not a value but a subsystem name
+	// When the developer has the steam installed, it will try to grab the steam subsystem and use it.
+	// If the engine can grab the Steam subsystem, it will be used as the default. This debug log will show this on screen. -Renan
+	const FString onlineSubsystemName = onlineSubsystemReference->GetSubsystemName().ToString();
+	UEMSUtils::ShowDebugMessage(FString::Printf(TEXT("Current online subsystem: %s"), *onlineSubsystemName), FColor::Green);
+	
 	this->OnlineSubsystemSessionInterface = onlineSubsystemReference->GetSessionInterface();
 }
 
@@ -50,6 +57,7 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 	// these basic configurations. This way I can define at any moment how these settings are defined. -Renan
 	// TODO: Create a data asset to enable further configurations of these online settings. Also, make a function to override the settings that can be called at any time;
 	this->OnlineSessionSettings = MakeShareable(new FOnlineSessionSettings());
+	
 	this->OnlineSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
 	this->OnlineSessionSettings->NumPublicConnections = numberOfPublicConnections;
 	this->OnlineSessionSettings->bAllowJoinInProgress = true;
@@ -59,6 +67,7 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 	this->OnlineSessionSettings->bShouldAdvertise = true;
 	this->OnlineSessionSettings->bUsesPresence = true;
 	this->OnlineSessionSettings->bUseLobbiesIfAvailable = true;
+	this->OnlineSessionSettings->BuildUniqueId = 1;
 	this->OnlineSessionSettings->Set(MATCH_TYPE, matchTypeName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 	// With the ULocalPlayer reference I can grab the preferred unique net id. It is required to create a new online session.
