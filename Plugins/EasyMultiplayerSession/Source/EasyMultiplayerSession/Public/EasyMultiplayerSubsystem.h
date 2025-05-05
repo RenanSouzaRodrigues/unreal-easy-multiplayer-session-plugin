@@ -17,10 +17,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerJoinSessionDelegate,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerStartSessionDeletage, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerDestroySessionDelegate, bool, bSuccess);
 
-// This delegates needs to be converted to blueprint native events so I can call this, or any other developer to be honest, at any point
-// and also bind blueprint custom events to these delegates. -Dallai
-// DECLARE_MULTICAST_DELEGATE_TwoParams(FEasyMultiplayerFindSessionDelegate, const TArray<FOnlineSessionSearchResult> &searchResults, bool bSuccess);
-
 
 UCLASS()
 class EASYMULTIPLAYERSESSION_API UEasyMultiplayerSubsystem : public UGameInstanceSubsystem {
