@@ -367,4 +367,3 @@ FOnlineSessionSearchResult UEasyMultiplayerSubsystem::GetRealSessionDataFromSess
 
 	return realSessionResult;
 }
-
