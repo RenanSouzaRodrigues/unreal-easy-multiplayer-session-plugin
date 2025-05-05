@@ -61,6 +61,14 @@ private:
 	FDelegateHandle JoinSessionDelegateHandle;
 	FDelegateHandle StartSessionDelegateHandle;
 	FDelegateHandle DestroySessionDelegateHandle;
+
+	// This variables are used to create the session after destroing a existing session when the user tries to
+	// create a session. If there is a current existing session, I need to destroy it first. And after the destroy event is called
+	// I can create a brand new session. -Renan
+	bool bCreateSessionAfterDestroy { false };
+	int32 CachedNumberOfPublicPlayers;
+	FString CachedMatchTypeName;
+	
 	
 public:
 	UEasyMultiplayerSubsystem();
@@ -94,6 +102,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void DestroySession();
+
+	UFUNCTION(BlueprintCallable)
+	void OpenLobbyAsHostServer(FString pathToLobby);
 
 protected:
 	// Internal callbacks for the events that ared called by the session funcions. -Renan

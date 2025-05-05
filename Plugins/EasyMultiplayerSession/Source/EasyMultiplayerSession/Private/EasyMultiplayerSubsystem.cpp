@@ -45,10 +45,22 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 		return;
 	}
 
+	// Clear the cached data when calling this function. -Renan
+	this->CachedNumberOfPublicPlayers = 0;
+	this->CachedMatchTypeName = FString("");
+	
 	// If there is a valid online game session already, it means that I need to destroy it to be able to create a new session.
 	// This validation exists only to ensure that we have only one valid online game session. -Renan
+	UEMSUtils::ShowDebugMessage(TEXT("Validating existing session"));
 	FNamedOnlineSession* existingSession = this->OnlineSubsystemSessionInterface->GetNamedSession(NAME_GameSession);
-	if (existingSession != nullptr) this->OnlineSubsystemSessionInterface->DestroySession(NAME_GameSession);
+	if (existingSession != nullptr) {
+		UEMSUtils::ShowDebugMessage(TEXT("There is a previous session created. Destroying previous session"));
+		this->bCreateSessionAfterDestroy = true;
+		this->CachedNumberOfPublicPlayers = numberOfPublicConnections;
+		this->CachedMatchTypeName = matchTypeName;
+		this->DestroySession();
+		return;
+	}
 
 	// I will store this into this delegate handle so this way I can 'unbind' this later. -Renan
 	this->CreateSessionDelegateHandle = this->OnlineSubsystemSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(this->OnCreateSessionEvent);
@@ -85,8 +97,9 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 
 	// If the session is not created, then is probably a problem with the engine lifecycle.
 	// I think this is a very impossible scenario, but we never know. Better safe then sorry. -Renan
+	UEMSUtils::ShowDebugMessage(TEXT("Trying to create a new session"));
 	if (!this->OnlineSubsystemSessionInterface->CreateSession(*hostPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *this->OnlineSessionSettings)) {
-		UEMSUtils::ShowDebugMessage(TEXT("Session was not created, aborting process and cleaning delegates"));
+		UEMSUtils::ShowDebugMessage(TEXT("Session was not created, aborting process and started cleaning delegates"), FColor::Red);
 		this->OnlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
 		this->OnSessionCreatedEvent.Broadcast(false);
 	}
@@ -117,6 +130,7 @@ void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult)
 		return;
 	}
 
+	UEMSUtils::ShowDebugMessage(TEXT("Trying to find sessions"));
 	// If there is any error when the subsystem tries to retrieve the list of sessions to join, I simple send a log and broadcast a false response. -Renan
 	if (!this->OnlineSubsystemSessionInterface->FindSessions(*localPlayer->GetPreferredUniqueNetId(), this->OnlineSessionSearch.ToSharedRef())) {
 		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
@@ -161,9 +175,50 @@ void UEasyMultiplayerSubsystem::JoinSession(const FOnlineSessionSearchResult& on
 	}
 }
 
-void UEasyMultiplayerSubsystem::StartSession() {}
+void UEasyMultiplayerSubsystem::StartSession() {
+	// simple validation. -Renan
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		this->OnSessionStartedEvent.Broadcast(false);
+		return;
+	}
 
-void UEasyMultiplayerSubsystem::DestroySession() {}
+	// Delegate handle binding. -Renan
+	this->StartSessionDelegateHandle = this->OnlineSubsystemSessionInterface->AddOnStartSessionCompleteDelegate_Handle(this->OnStartSessionEvent);
+
+	if (!this->OnlineSubsystemSessionInterface->StartSession(NAME_GameSession)) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to start the session, aborting process and cleaning delegates"), FColor::Red);
+		this->OnlineSubsystemSessionInterface->ClearOnStartSessionCompleteDelegate_Handle(this->StartSessionDelegateHandle);
+		this->OnSessionStartedEvent.Broadcast(false);
+	}
+}
+
+void UEasyMultiplayerSubsystem::DestroySession() {
+	// Simple validation. -Renan
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		this->OnSessionDestroyedEvent.Broadcast(false);
+		return;
+	}
+
+	// delegate handle binding. -Renan
+	this->DestroySessionDelegateHandle = this->OnlineSubsystemSessionInterface->AddOnDestroySessionCompleteDelegate_Handle(this->OnDestroySessionEvent);
+	
+	if (!this->OnlineSubsystemSessionInterface->DestroySession(NAME_GameSession)) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to destroy session, aborting process and cleaning delegates"), FColor::Red);
+		this->OnlineSubsystemSessionInterface->ClearOnDestroySessionCompleteDelegate_Handle(this->DestroySessionDelegateHandle);
+		this->OnSessionDestroyedEvent.Broadcast(false);
+	}
+}
+
+void UEasyMultiplayerSubsystem::OpenLobbyAsHostServer(FString pathToLobby) {
+	UWorld* world = this->GetWorld();
+	if (!world) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to retrive world information to open lobby level. Aborting process"), FColor::Red);
+		return;
+	}
+
+	const FString finalPathName = FString::Printf(TEXT("/Game/%s?listen"), *pathToLobby);
+	world->ServerTravel(finalPathName);
+}
 
 // Event Listeners
 void UEasyMultiplayerSubsystem::OnCreateSessionEventListenerCallback(FName createdSessionName, bool bWasSuccessfullCreated) {
@@ -189,17 +244,44 @@ void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSucc
 }
 
 void UEasyMultiplayerSubsystem::OnJoinSessionEventListenerCallback(FName joinedSessionName, EOnJoinSessionCompleteResult::Type joinResultType) {
-	if (!this->IsOnlineSubsystemInterfaceValid()) return;
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
+		return;
+	};
+	
 	this->OnlineSubsystemSessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(this->JoinSessionDelegateHandle);
 	this->OnSessionJoinedEvent.Broadcast(joinResultType);
+	if (joinResultType == EOnJoinSessionCompleteResult::Success) UEMSUtils::ShowDebugMessage(TEXT("Session Joined Successfully!"), FColor::Green);
 }
 
 void UEasyMultiplayerSubsystem::OnStartSessionEventListenerCallback(FName sessionName, bool bWasSuccessful) {
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		this->OnSessionStartedEvent.Broadcast(false);
+		return;
+	}
 	
+	this->OnlineSubsystemSessionInterface->ClearOnStartSessionCompleteDelegate_Handle(this->StartSessionDelegateHandle);
+	this->OnSessionStartedEvent.Broadcast(bWasSuccessful);
+	if (bWasSuccessful) UEMSUtils::ShowDebugMessage(TEXT("Session Started successfully!"), FColor::Green);
 }
 
 void UEasyMultiplayerSubsystem::OnDestroySessionEventListenerCallback(FName sessionName, bool bWasSuccessful) {
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		this->OnSessionDestroyedEvent.Broadcast(false);
+		return;
+	}
 	
+	this->OnlineSubsystemSessionInterface->ClearOnDestroySessionCompleteDelegate_Handle(this->DestroySessionDelegateHandle);
+	this->OnSessionDestroyedEvent.Broadcast(bWasSuccessful);
+
+	if (this->bCreateSessionAfterDestroy) {
+		this->bCreateSessionAfterDestroy = false;
+		UEMSUtils::ShowDebugMessage(TEXT("Previos Session destroyed. Ready to create a new session."));
+		this->CreateSession(this->CachedNumberOfPublicPlayers, this->CachedMatchTypeName);
+		return;
+	}
+	
+	if (bWasSuccessful) UEMSUtils::ShowDebugMessage(TEXT("Session Destroyed Successfully!"), FColor::Green);
 }
 
 bool UEasyMultiplayerSubsystem::IsOnlineSubsystemInterfaceValid() const {
