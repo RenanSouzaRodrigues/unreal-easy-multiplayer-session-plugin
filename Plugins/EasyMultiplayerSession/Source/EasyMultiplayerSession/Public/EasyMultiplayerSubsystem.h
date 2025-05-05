@@ -2,22 +2,25 @@
 
 #pragma once
 #include "CoreMinimal.h"
+#include "Enums/EEMSJoinSessionCompleteResult.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Structs/FEMSOnlineSessionSearchResult.h"
 #include "EasyMultiplayerSubsystem.generated.h"
 
 #define MATCH_TYPE FName("MatchType")
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEasyMultiplayerDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerSessionCreatedDelegate, bool, bSessionCreated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEasyMultiplayerFindSessionDelegate, TArray<FEMSOnlineSessionSearchResult>, sessionResult, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerJoinSessionDelegate, EEMSJoinSessionCompleteResult,  joinResult);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerStartSessionDeletage, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerDestroySessionDelegate, bool, bSuccess);
 
 // This delegates needs to be converted to blueprint native events so I can call this, or any other developer to be honest, at any point
 // and also bind blueprint custom events to these delegates. -Dallai
-DECLARE_MULTICAST_DELEGATE_TwoParams(FEasyMultiplayerFindSessionDelegate, const TArray<FOnlineSessionSearchResult> &searchResults, bool bSuccess);
-DECLARE_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerJoinSessionDelegate, EOnJoinSessionCompleteResult::Type joinResult);
+// DECLARE_MULTICAST_DELEGATE_TwoParams(FEasyMultiplayerFindSessionDelegate, const TArray<FOnlineSessionSearchResult> &searchResults, bool bSuccess);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerStartSessionDeletage, bool, bSuccess);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerDestroySessionDelegate, bool, bSuccess);
 
 UCLASS()
 class EASYMULTIPLAYERSESSION_API UEasyMultiplayerSubsystem : public UGameInstanceSubsystem {
@@ -27,9 +30,10 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FEasyMultiplayerSessionCreatedDelegate OnSessionCreatedEvent;
 
-	// this both events can't be assinable right now. -Dallai
-	// TODO: Make this events blueprint assinable
+	UPROPERTY(BlueprintAssignable)
 	FEasyMultiplayerFindSessionDelegate OnSessionFoundEvent;
+
+	UPROPERTY(BlueprintAssignable)
 	FEasyMultiplayerJoinSessionDelegate OnSessionJoinedEvent;
 
 	UPROPERTY(BlueprintAssignable)
@@ -39,6 +43,9 @@ public:
 	FEasyMultiplayerDestroySessionDelegate OnSessionDestroyedEvent;
 	
 private:
+	// This property can hold the configurations to override if the user wants. -Renan
+	class UEMSSessionCreationSettingsPDA* SessionCreationSettingsOverride;
+	
 	// As I can see this is just a typedef of some sort of TMap. But this is fine. -Renan
 	IOnlineSessionPtr OnlineSubsystemSessionInterface;
 
@@ -48,6 +55,9 @@ private:
 	// This session search is used to configure and retain everything that returns from the find session. -Renan
 	TSharedPtr<FOnlineSessionSearch> OnlineSessionSearch;
 
+	// This property handles the last TArray<FOnlineSessionSearchResult> when the user calls the Find session method. -Renan
+	TArray<FOnlineSessionSearchResult> CachedFindServerSearchResult;
+	
 	// These events or delegates are called when the functions finish their execution. They need to be constructed first -Renan
 	FOnCreateSessionCompleteDelegate OnCreateSessionEvent;
 	FOnFindSessionsCompleteDelegate OnFindSessionEvent;
@@ -73,6 +83,9 @@ private:
 public:
 	UEasyMultiplayerSubsystem();
 
+	UFUNCTION(BlueprintCallable)
+	void OverrideSessionCreationSettings(UEMSSessionCreationSettingsPDA* settingsToOverride);
+
 	/**
 	 * Method that creates a new online multiplayer session. This method also fires up an event in case the session was
 	 * successfully created or not. You can bind a Custom Event Listeners to the OnSessionCreatedEvent to handle any use case.
@@ -95,7 +108,7 @@ public:
 	 * @param onlineSessionSearchResult The session result that can be found using EasyMultiplayerSession::FindSessions method
 	 */
 	UFUNCTION(BlueprintCallable)
-	void JoinSession(const FOnlineSessionSearchResult& onlineSessionSearchResult);
+	void JoinSession(const FEMSOnlineSessionSearchResult& onlineSessionSearchResult);
 
 	UFUNCTION(BlueprintCallable)
 	void StartSession();
@@ -116,4 +129,7 @@ protected:
 
 private:
 	bool IsOnlineSubsystemInterfaceValid() const;
+	FEMSOnlineSessionSearchResult ConvertSessionResult(const FOnlineSessionSearchResult& sessionResult);
+	EEMSJoinSessionCompleteResult ConvertJoinResult(const EOnJoinSessionCompleteResult::Type joinResultType);
+	FOnlineSessionSearchResult GetRealSessionDataFromSessionPlaceholderData(FEMSOnlineSessionSearchResult sessionToFind);
 };

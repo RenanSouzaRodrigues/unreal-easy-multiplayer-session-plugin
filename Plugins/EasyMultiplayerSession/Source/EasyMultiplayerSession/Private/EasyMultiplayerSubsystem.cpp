@@ -5,6 +5,7 @@
 #include "OnlineSessionSettings.h"
 #include "EasyMultiplayerSession/EMSUtils.h"
 #include "Online/OnlineSessionNames.h"
+#include "Data/EMSSessionCreationSettingsPDA.h"
 
 UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 	// I'm using this approach because these especific delegates have their own way to be initialized and binded to events.
@@ -19,6 +20,8 @@ UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 // The constructor function starts here. -Renan
 {
 	IOnlineSubsystem* onlineSubsystemReference = IOnlineSubsystem::Get();
+
+	this->SessionCreationSettingsOverride = nullptr;
 
 	// Validates the online subsystem to make sure the project has it. It will be a little bit hard to make a online game without the
 	// online subsystem. -Renan
@@ -35,6 +38,10 @@ UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 	UEMSUtils::ShowDebugMessage(FString::Printf(TEXT("Current online subsystem: %s"), *onlineSubsystemName), FColor::Green);
 	
 	this->OnlineSubsystemSessionInterface = onlineSubsystemReference->GetSessionInterface();
+}
+
+void UEasyMultiplayerSubsystem::OverrideSessionCreationSettings(UEMSSessionCreationSettingsPDA* settingsToOverride) {
+	this->SessionCreationSettingsOverride = settingsToOverride;
 }
 
 void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, FString matchTypeName) {
@@ -70,18 +77,30 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 	// TODO: Create a data asset to enable further configurations of these online settings. Also, make a function to override the settings that can be called at any time;
 	this->OnlineSessionSettings = MakeShareable(new FOnlineSessionSettings());
 	
-	this->OnlineSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
-	this->OnlineSessionSettings->NumPublicConnections = numberOfPublicConnections;
-	this->OnlineSessionSettings->bAllowJoinInProgress = true;
-	this->OnlineSessionSettings->bAllowJoinViaPresence = true;
-	this->OnlineSessionSettings->bAllowInvites = true;
-	this->OnlineSessionSettings->bAllowJoinViaPresenceFriendsOnly = false;
-	this->OnlineSessionSettings->bShouldAdvertise = true;
-	this->OnlineSessionSettings->bUsesPresence = true;
-	this->OnlineSessionSettings->bUseLobbiesIfAvailable = true;
-	this->OnlineSessionSettings->BuildUniqueId = 1;
-	this->OnlineSessionSettings->Set(MATCH_TYPE, matchTypeName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	if (this->SessionCreationSettingsOverride != nullptr) {
+		this->OnlineSessionSettings->bAllowJoinInProgress = this->SessionCreationSettingsOverride->bAllowJoinInProgress;
+		this->OnlineSessionSettings->bAllowJoinViaPresence = this->SessionCreationSettingsOverride->bAllowJoinViaPresence;
+		this->OnlineSessionSettings->bAllowInvites = this->SessionCreationSettingsOverride->bAllowInvites;
+		this->OnlineSessionSettings->bAllowJoinViaPresenceFriendsOnly = this->SessionCreationSettingsOverride->bAllowJoinViaPresenceFriendsOnly;
+		this->OnlineSessionSettings->bShouldAdvertise = this->SessionCreationSettingsOverride->bShouldAdvertise;
+		this->OnlineSessionSettings->bUsesPresence = this->SessionCreationSettingsOverride->bUsesPresence;
+		this->OnlineSessionSettings->bUseLobbiesIfAvailable = this->SessionCreationSettingsOverride->bUseLobbiesIfAvailable;
+		this->OnlineSessionSettings->BuildUniqueId = 1;
+	} else {
+		this->OnlineSessionSettings->bAllowJoinInProgress = true;
+		this->OnlineSessionSettings->bAllowJoinViaPresence = true;
+		this->OnlineSessionSettings->bAllowInvites = true;
+		this->OnlineSessionSettings->bAllowJoinViaPresenceFriendsOnly = false;
+		this->OnlineSessionSettings->bShouldAdvertise = true;
+		this->OnlineSessionSettings->bUsesPresence = true;
+		this->OnlineSessionSettings->bUseLobbiesIfAvailable = true;
+		this->OnlineSessionSettings->BuildUniqueId = 1;
+	}
 
+	this->OnlineSessionSettings->NumPublicConnections = numberOfPublicConnections;
+	this->OnlineSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
+	this->OnlineSessionSettings->Set(MATCH_TYPE, matchTypeName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+	
 	// With the ULocalPlayer reference I can grab the preferred unique net id. It is required to create a new online session.
 	// without a local player controller, it is impossible to track who is the owner of the session. -Renan
 	const ULocalPlayer* hostPlayer = this->GetWorld()->GetFirstLocalPlayerFromController();
@@ -108,7 +127,7 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult) {
 	// Online subsystem session interface validation. It is good to aways be sure. -Renan
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
-		this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
+		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
 		return;
 	}
 
@@ -126,7 +145,7 @@ void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult)
 	if (!localPlayer) {
 		UEMSUtils::ShowDebugMessage(TEXT("No local player controller found. Aborting Find Session Process. A Local Player Controller is required in order search for sessions"), FColor::Red);
 		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
-		this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
+		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
 		return;
 	}
 
@@ -134,22 +153,22 @@ void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult)
 	// If there is any error when the subsystem tries to retrieve the list of sessions to join, I simple send a log and broadcast a false response. -Renan
 	if (!this->OnlineSubsystemSessionInterface->FindSessions(*localPlayer->GetPreferredUniqueNetId(), this->OnlineSessionSearch.ToSharedRef())) {
 		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
-		this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
+		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
 	}
 }
 
-void UEasyMultiplayerSubsystem::JoinSession(const FOnlineSessionSearchResult& onlineSessionSearchResult) {
+void UEasyMultiplayerSubsystem::JoinSession(const FEMSOnlineSessionSearchResult& onlineSessionSearchResult) {
 	// I first validate the session search result because, if this is null or invalid there is no reason to try join this session. -Renan
-	if (!onlineSessionSearchResult.IsValid()) {
+	if (onlineSessionSearchResult.IsValid()) {
 		 UEMSUtils::ShowDebugMessage(TEXT("Unable to Join Session, the search result is invalid"));
-		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::SessionDoesNotExist);
+		this->OnSessionJoinedEvent.Broadcast(this->ConvertJoinResult(EOnJoinSessionCompleteResult::UnknownError));
 		return;
 	}
 
 	// Simple Validation. -Renan
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
 		// I think I can use this EOnJoinSessionCompleteResult::UnknownError for any generic error. Just like this one. -Renan
-		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
+		this->OnSessionJoinedEvent.Broadcast(this->ConvertJoinResult(EOnJoinSessionCompleteResult::UnknownError));
 		return;
 	};
 
@@ -163,14 +182,16 @@ void UEasyMultiplayerSubsystem::JoinSession(const FOnlineSessionSearchResult& on
 	if (!localPlayer) {
 		UEMSUtils::ShowDebugMessage(TEXT("No local player controller found. Aborting Join Session Process. A Local Player Controller is required in order join a session"), FColor::Red);
 		this->OnlineSubsystemSessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(this->JoinSessionDelegateHandle);
-		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
+		this->OnSessionJoinedEvent.Broadcast(this->ConvertJoinResult(EOnJoinSessionCompleteResult::UnknownError));
 		return;
 	}
+
+	const FOnlineSessionSearchResult foundSession = this->GetRealSessionDataFromSessionPlaceholderData(onlineSessionSearchResult);
 	
-	if (!this->OnlineSubsystemSessionInterface->JoinSession(*localPlayer->GetPreferredUniqueNetId(), NAME_GameSession, onlineSessionSearchResult)) {
+	if (!this->OnlineSubsystemSessionInterface->JoinSession(*localPlayer->GetPreferredUniqueNetId(), NAME_GameSession, foundSession)) {
 		UEMSUtils::ShowDebugMessage(TEXT("Unable to join session for some error"), FColor::Red);
 		this->OnlineSubsystemSessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(this->JoinSessionDelegateHandle);
-		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
+		this->OnSessionJoinedEvent.Broadcast(this->ConvertJoinResult(EOnJoinSessionCompleteResult::UnknownError));
 		return;
 	}
 }
@@ -222,35 +243,54 @@ void UEasyMultiplayerSubsystem::OpenLobbyAsHostServer(FString pathToLobby) {
 
 // Event Listeners
 void UEasyMultiplayerSubsystem::OnCreateSessionEventListenerCallback(FName createdSessionName, bool bWasSuccessfullCreated) {
-	if (this->OnlineSubsystemSessionInterface) {
-		this->OnlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		this->OnSessionCreatedEvent.Broadcast(false);
+		return;
 	}
 	
+	this->OnlineSubsystemSessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(this->CreateSessionDelegateHandle);
+
 	this->OnSessionCreatedEvent.Broadcast(bWasSuccessfullCreated);
 	UEMSUtils::ShowDebugMessage(TEXT("Session created successfully!"), FColor::Green);
 }
 
 void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSuccessfull) {
-	if (this->OnlineSubsystemSessionInterface) {
-		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
+	if (this->IsOnlineSubsystemInterfaceValid()) {
+		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
+		return;
 	}
 
+	this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
+	
 	// In case there is no session results but the process still returns a success, broadcast the event with no success because there is no list
 	// of sessions to join. I don't know if broadcasting a false value is a good choice. But at this point, I think is enough. -Renan
-	if (this->OnlineSessionSearch->SearchResults.Num() == 0) this->OnSessionFoundEvent.Broadcast(TArray<FOnlineSessionSearchResult>(), false);
+	if (this->OnlineSessionSearch->SearchResults.Num() == 0) {
+		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
+	}
+
+	// This is cached so I can use this later when the user choose a found session. Also, this is relevant to be able to use
+	// unreal reflection system. -Renan
+	this->CachedFindServerSearchResult = this->OnlineSessionSearch->SearchResults;
+
+	TArray<FEMSOnlineSessionSearchResult> results;
+	for (auto searchResult : this->OnlineSessionSearch->SearchResults) {
+		results.Add(this->ConvertSessionResult(searchResult));
+	}
 	
-	this->OnSessionFoundEvent.Broadcast(this->OnlineSessionSearch->SearchResults, bWasSuccessfull);
+	this->OnSessionFoundEvent.Broadcast(results, bWasSuccessfull);
+	
 	UEMSUtils::ShowDebugMessage(TEXT("Find Session Results returned successfully!"), FColor::Green);
 }
 
 void UEasyMultiplayerSubsystem::OnJoinSessionEventListenerCallback(FName joinedSessionName, EOnJoinSessionCompleteResult::Type joinResultType) {
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
-		this->OnSessionJoinedEvent.Broadcast(EOnJoinSessionCompleteResult::UnknownError);
+		this->OnSessionJoinedEvent.Broadcast(this->ConvertJoinResult(joinResultType));
 		return;
 	};
 	
 	this->OnlineSubsystemSessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(this->JoinSessionDelegateHandle);
-	this->OnSessionJoinedEvent.Broadcast(joinResultType);
+	
+	this->OnSessionJoinedEvent.Broadcast(this->ConvertJoinResult(joinResultType));
 	if (joinResultType == EOnJoinSessionCompleteResult::Success) UEMSUtils::ShowDebugMessage(TEXT("Session Joined Successfully!"), FColor::Green);
 }
 
@@ -261,6 +301,7 @@ void UEasyMultiplayerSubsystem::OnStartSessionEventListenerCallback(FName sessio
 	}
 	
 	this->OnlineSubsystemSessionInterface->ClearOnStartSessionCompleteDelegate_Handle(this->StartSessionDelegateHandle);
+
 	this->OnSessionStartedEvent.Broadcast(bWasSuccessful);
 	if (bWasSuccessful) UEMSUtils::ShowDebugMessage(TEXT("Session Started successfully!"), FColor::Green);
 }
@@ -272,9 +313,10 @@ void UEasyMultiplayerSubsystem::OnDestroySessionEventListenerCallback(FName sess
 	}
 	
 	this->OnlineSubsystemSessionInterface->ClearOnDestroySessionCompleteDelegate_Handle(this->DestroySessionDelegateHandle);
+
 	this->OnSessionDestroyedEvent.Broadcast(bWasSuccessful);
 
-	if (this->bCreateSessionAfterDestroy) {
+	if (this->bCreateSessionAfterDestroy && bWasSuccessful) {
 		this->bCreateSessionAfterDestroy = false;
 		UEMSUtils::ShowDebugMessage(TEXT("Previos Session destroyed. Ready to create a new session."));
 		this->CreateSession(this->CachedNumberOfPublicPlayers, this->CachedMatchTypeName);
@@ -291,3 +333,38 @@ bool UEasyMultiplayerSubsystem::IsOnlineSubsystemInterfaceValid() const {
 	}
 	return true;
 }
+
+FEMSOnlineSessionSearchResult UEasyMultiplayerSubsystem::ConvertSessionResult(const FOnlineSessionSearchResult& sessionResult) {
+	FEMSOnlineSessionSearchResult result;
+	result.SessionId = sessionResult.GetSessionIdStr();
+	result.PingInMs = sessionResult.PingInMs;
+	result.NumberOfPublicConnections = sessionResult.Session.NumOpenPublicConnections;
+	result.NumberOfPrivateConnections = sessionResult.Session.NumOpenPrivateConnections;
+	return result;
+}
+
+EEMSJoinSessionCompleteResult UEasyMultiplayerSubsystem::ConvertJoinResult(const EOnJoinSessionCompleteResult::Type joinResultType) {
+	switch (joinResultType) {
+		case EOnJoinSessionCompleteResult::Success: return EEMSJoinSessionCompleteResult::Success;
+		case EOnJoinSessionCompleteResult::UnknownError: return EEMSJoinSessionCompleteResult::UnknownError;
+		case EOnJoinSessionCompleteResult::AlreadyInSession: return EEMSJoinSessionCompleteResult::AlreadyInSession;
+		case EOnJoinSessionCompleteResult::SessionIsFull: return EEMSJoinSessionCompleteResult::SessionIsFull;
+		case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress: return EEMSJoinSessionCompleteResult::CouldNotRetrieveAddress;
+		case EOnJoinSessionCompleteResult::SessionDoesNotExist: return EEMSJoinSessionCompleteResult::SessionDoesNotExist;
+		default: return EEMSJoinSessionCompleteResult::UnknownError;
+	}
+}
+
+FOnlineSessionSearchResult UEasyMultiplayerSubsystem::GetRealSessionDataFromSessionPlaceholderData(FEMSOnlineSessionSearchResult sessionToFind) {
+	FOnlineSessionSearchResult realSessionResult;
+
+	for (auto cachedSessionResult : this->CachedFindServerSearchResult) {
+		if (cachedSessionResult.GetSessionIdStr() == sessionToFind.SessionId) {
+			realSessionResult = cachedSessionResult;
+			break;
+		}
+	}
+
+	return realSessionResult;
+}
+
