@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Lobby Configuration", meta=(EditCondition="bEnableAutoGameStartWhenReachMinimalPlayersAmount"))
 	int32 MinimalPlayersAmountToStart { 16 };
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Loby Configuration", meta=(EditCondition="bEnableAutoGameStartWhenReachMinimalPlayersAmount"))
+	bool bAutomaticallyStartGameUsingNonSeamlessTransition { false };
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Lobby Configuration")
 	FString LevelNameToLoadWhenReadyToPlay;
 

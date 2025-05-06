@@ -1,7 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GameModes/EMSLobbyGameModeBase.h"
-
 #include "EasyMultiplayerSubsystem.h"
 #include "Data/EMSLobbyEventsPDA.h"
 #include "EasyMultiplayerSession/EMSUtils.h"
@@ -18,10 +17,15 @@ void AEMSLobbyGameModeBase::PostLogin(APlayerController* NewPlayer) {
 	if (this->GameState) {
 		int32 numberOfPlayers = this->GameState.Get()->PlayerArray.Num();
 		UEMSUtils::ShowPersistentDebugMessage(FString::Printf(TEXT("Current number of players: %d"), numberOfPlayers), FColor::Yellow);
-	}
 
-	if (APlayerState* playerState = NewPlayer->GetPlayerState<APlayerState>()) {
-		UEMSUtils::ShowDebugMessage(FString::Printf(TEXT("%s Joined the session"), *playerState->GetPlayerName()), FColor::Cyan);
+		if (APlayerState* playerState = NewPlayer->GetPlayerState<APlayerState>()) {
+			UEMSUtils::ShowDebugMessage(FString::Printf(TEXT("%s Joined the session"), *playerState->GetPlayerName()), FColor::Cyan);
+		}
+
+		if (this->bEnableAutoGameStartWhenReachMinimalPlayersAmount && numberOfPlayers == this->MinimalPlayersAmountToStart) {
+			if (this->bAutomaticallyStartGameUsingNonSeamlessTransition) this->StartGameNonSeamless();
+			else this->StartGameSeamless();
+		}
 	}
 }
 
@@ -45,7 +49,15 @@ void AEMSLobbyGameModeBase::Logout(AController* Exiting) {
 void AEMSLobbyGameModeBase::StartGameSeamless() {
 	UEasyMultiplayerSubsystem* EasyMultiplayerSubsystem = this->GetGameInstance()->GetSubsystem<UEasyMultiplayerSubsystem>();
 	if (EasyMultiplayerSubsystem) {
-		this->bUseSeamlessTravel;
+		this->bUseSeamlessTravel = true;
+		EasyMultiplayerSubsystem->OpenGameLevelAsHostServer(this->LevelNameToLoadWhenReadyToPlay);
+	}
+}
+
+void AEMSLobbyGameModeBase::StartGameNonSeamless() {
+	UEasyMultiplayerSubsystem* EasyMultiplayerSubsystem = this->GetGameInstance()->GetSubsystem<UEasyMultiplayerSubsystem>();
+	if (EasyMultiplayerSubsystem) {
+		this->bUseSeamlessTravel = false;
 		EasyMultiplayerSubsystem->OpenGameLevelAsHostServer(this->LevelNameToLoadWhenReadyToPlay);
 	}
 }
