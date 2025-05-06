@@ -7,6 +7,10 @@
 #include "Online/OnlineSessionNames.h"
 #include "Data/EMSSessionCreationSettingsPDA.h"
 
+// This session plugin is ready to be tested but, still need to do somethings.
+// TODO: Create a way to Invite Steam Friends.
+// TODO: Create a way to enter on the a friend session.
+
 UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 	// I'm using this approach because these especific delegates have their own way to be initialized and binded to events.
 	// This way I can call the construction methods of all of then and start bind my subsystem events the way I need.
@@ -51,7 +55,7 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 		this->OnSessionCreatedEvent.Broadcast(false);
 		return;
 	}
-
+	
 	// Clear the cached data when calling this function. -Renan
 	this->CachedNumberOfPublicPlayers = 0;
 	this->CachedMatchTypeName = FString("");
@@ -173,8 +177,8 @@ void UEasyMultiplayerSubsystem::JoinSession(const FEMSOnlineSessionSearchResult&
 	};
 
 	// TODO: Validate if the session is full;
-
 	// TODO: Validate if the session is private;
+	// TODO: Validate if the session has password;
 	
 	this->JoinSessionDelegateHandle = this->OnlineSubsystemSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(this->OnJoinSessionEvent);
 
@@ -267,7 +271,7 @@ void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSucc
 	if (this->OnlineSessionSearch->SearchResults.Num() == 0) {
 		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
 	}
-
+	
 	// This is cached so I can use this later when the user choose a found session. Also, this is relevant to be able to use
 	// unreal reflection system. -Renan
 	this->CachedFindServerSearchResult = this->OnlineSessionSearch->SearchResults;
@@ -334,7 +338,10 @@ bool UEasyMultiplayerSubsystem::IsOnlineSubsystemInterfaceValid() const {
 	return true;
 }
 
+// This function exists to translate the session result into something that can use the blueprint reflection system.
+// With this, I can aways look on the array of all the results and filter it and join the correct session result data. -Renan
 FEMSOnlineSessionSearchResult UEasyMultiplayerSubsystem::ConvertSessionResult(const FOnlineSessionSearchResult& sessionResult) {
+	// The result data is just converted to a FStruct that can be exposed to blueprints API. -Renan
 	FEMSOnlineSessionSearchResult result;
 	result.SessionId = sessionResult.GetSessionIdStr();
 	result.PingInMs = sessionResult.PingInMs;
@@ -343,7 +350,9 @@ FEMSOnlineSessionSearchResult UEasyMultiplayerSubsystem::ConvertSessionResult(co
 	return result;
 }
 
+// Same thing here. I can use this function to make use of the blueprint reflection system. -Renan
 EEMSJoinSessionCompleteResult UEasyMultiplayerSubsystem::ConvertJoinResult(const EOnJoinSessionCompleteResult::Type joinResultType) {
+	// In this case is just a simple Enum translation. -Renan
 	switch (joinResultType) {
 		case EOnJoinSessionCompleteResult::Success: return EEMSJoinSessionCompleteResult::Success;
 		case EOnJoinSessionCompleteResult::UnknownError: return EEMSJoinSessionCompleteResult::UnknownError;
@@ -355,15 +364,15 @@ EEMSJoinSessionCompleteResult UEasyMultiplayerSubsystem::ConvertJoinResult(const
 	}
 }
 
+// This function is responsable to find the real session result data to join if the user so chooses a session. -Renan
 FOnlineSessionSearchResult UEasyMultiplayerSubsystem::GetRealSessionDataFromSessionPlaceholderData(FEMSOnlineSessionSearchResult sessionToFind) {
 	FOnlineSessionSearchResult realSessionResult;
-
+	// This array is saved previously, when the FindSession method is called. -Renan
 	for (auto cachedSessionResult : this->CachedFindServerSearchResult) {
 		if (cachedSessionResult.GetSessionIdStr() == sessionToFind.SessionId) {
 			realSessionResult = cachedSessionResult;
 			break;
 		}
 	}
-
 	return realSessionResult;
 }
