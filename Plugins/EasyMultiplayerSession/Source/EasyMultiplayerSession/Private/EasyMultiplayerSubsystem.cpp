@@ -244,7 +244,7 @@ void UEasyMultiplayerSubsystem::DestroySession() {
 	}
 }
 
-void UEasyMultiplayerSubsystem::OpenLobbyAsHostServer(FString pathToLobby) {
+void UEasyMultiplayerSubsystem::OpenGameLevelAsHostServer(FString pathToLobby) {
 	UWorld* world = this->GetWorld();
 	if (!world) {
 		UEMSUtils::ShowDebugMessage(TEXT("Unable to retrive world information to open lobby level. Aborting process"), FColor::Red);

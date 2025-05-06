@@ -116,7 +116,7 @@ public:
 	void DestroySession();
 
 	UFUNCTION(BlueprintCallable)
-	void OpenLobbyAsHostServer(FString pathToLobby);
+	void OpenGameLevelAsHostServer(FString pathToLobby);
 
 protected:
 	// Internal callbacks for the events that ared called by the session funcions. -Renan
