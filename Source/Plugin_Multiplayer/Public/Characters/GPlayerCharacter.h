@@ -35,6 +35,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
 	bool IsPlayerSprinting() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
+	bool IsPlayerInAir() const;
+
 protected:
 	virtual void BeginPlay() override;
 

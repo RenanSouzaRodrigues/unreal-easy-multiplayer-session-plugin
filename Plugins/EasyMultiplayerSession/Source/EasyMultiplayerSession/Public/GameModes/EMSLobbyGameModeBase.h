@@ -3,14 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameMode.h"
 #include "EMSLobbyGameModeBase.generated.h"
 
-/**
- * 
- */
 UCLASS()
-class EASYMULTIPLAYERSESSION_API AEMSLobbyGameModeBase : public AGameModeBase {
+class EASYMULTIPLAYERSESSION_API AEMSLobbyGameModeBase : public AGameMode {
 	GENERATED_BODY()
 
 public:

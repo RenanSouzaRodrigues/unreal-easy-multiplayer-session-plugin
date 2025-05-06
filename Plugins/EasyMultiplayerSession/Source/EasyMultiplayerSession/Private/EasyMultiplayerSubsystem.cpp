@@ -200,6 +200,16 @@ void UEasyMultiplayerSubsystem::JoinSession(const FEMSOnlineSessionSearchResult&
 	}
 }
 
+void UEasyMultiplayerSubsystem::ConnectToJoinedSession() {
+	if (!this->IsOnlineSubsystemInterfaceValid()) return;
+
+	FString ConnectionAddress;
+	this->OnlineSubsystemSessionInterface->GetResolvedConnectString(NAME_GameSession, ConnectionAddress);
+	if (APlayerController* playerController = this->GetGameInstance()->GetFirstLocalPlayerController()) {
+		playerController->ClientTravel(ConnectionAddress, ETravelType::TRAVEL_Absolute);
+	}
+}
+
 void UEasyMultiplayerSubsystem::StartSession() {
 	// simple validation. -Renan
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
@@ -342,11 +352,16 @@ bool UEasyMultiplayerSubsystem::IsOnlineSubsystemInterfaceValid() const {
 // With this, I can aways look on the array of all the results and filter it and join the correct session result data. -Renan
 FEMSOnlineSessionSearchResult UEasyMultiplayerSubsystem::ConvertSessionResult(const FOnlineSessionSearchResult& sessionResult) {
 	// The result data is just converted to a FStruct that can be exposed to blueprints API. -Renan
+	FString matchTypeName;
+	sessionResult.Session.SessionSettings.Get(MATCH_TYPE, matchTypeName);
+
 	FEMSOnlineSessionSearchResult result;
+	result.MatchType = matchTypeName;
 	result.SessionId = sessionResult.GetSessionIdStr();
 	result.PingInMs = sessionResult.PingInMs;
 	result.NumberOfPublicConnections = sessionResult.Session.NumOpenPublicConnections;
 	result.NumberOfPrivateConnections = sessionResult.Session.NumOpenPrivateConnections;
+	
 	return result;
 }
 

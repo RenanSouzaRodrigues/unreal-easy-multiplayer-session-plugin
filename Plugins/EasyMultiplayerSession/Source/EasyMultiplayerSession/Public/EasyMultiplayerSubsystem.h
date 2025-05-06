@@ -107,6 +107,9 @@ public:
 	void JoinSession(const FEMSOnlineSessionSearchResult& onlineSessionSearchResult);
 
 	UFUNCTION(BlueprintCallable)
+	void ConnectToJoinedSession();
+	
+	UFUNCTION(BlueprintCallable)
 	void StartSession();
 
 	UFUNCTION(BlueprintCallable)

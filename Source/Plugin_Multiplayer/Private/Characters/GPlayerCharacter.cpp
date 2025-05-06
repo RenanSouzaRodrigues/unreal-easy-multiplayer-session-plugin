@@ -60,3 +60,8 @@ float AGPlayerCharacter::GetPlayerVelocityLength() const {
 bool AGPlayerCharacter::IsPlayerSprinting() const {
 	return this->bIsSprinting;
 }
+
+bool AGPlayerCharacter::IsPlayerInAir() const {
+	return this->GetCharacterMovement()->IsFalling();
+}
+
