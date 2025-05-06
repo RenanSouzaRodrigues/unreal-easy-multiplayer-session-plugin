@@ -13,10 +13,10 @@ class EASYMULTIPLAYERSESSION_API AEMSLobbyGameModeBase : public AGameMode {
 public:
 	/**
 	 * This field is only required if you pretend to use Lobby events. In order to Dispatch the Lobby global events,
-	 * first create a new Data Asset based on EMSLobbyEvents, then assign it here.
+	 * first create a new Data Asset based on EMSLobbyEventsPDA, then assign it here.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Lobby Configuration")
-	TObjectPtr<class UEMSLobbyEvents> EasyMultiplayerLobbyEvents;
+	TObjectPtr<class UEMSLobbyEventsPDA> EasyMultiplayerLobbyEvents;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Lobby Configuration")
 	bool bDispatchEventWhenNewPlayerJoinsLobby { false };
@@ -37,8 +37,17 @@ public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 
+	/**
+	 * Method that moves the players on the lobby to the game making a seamless transition.
+	 */
 	UFUNCTION(BlueprintCallable)
-	void StartGame();
+	void StartGameSeamless();
+
+	/**
+	 * Method that moves the players on the lobby to the game making a non-seamless transition.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void StartGameNonSeamless();
 
 private:
 	bool IsLobbyEventsReferenceValid() const;

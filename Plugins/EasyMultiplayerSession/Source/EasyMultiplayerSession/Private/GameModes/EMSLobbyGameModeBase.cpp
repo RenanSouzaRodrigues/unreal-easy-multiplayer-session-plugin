@@ -3,7 +3,7 @@
 #include "GameModes/EMSLobbyGameModeBase.h"
 
 #include "EasyMultiplayerSubsystem.h"
-#include "Data/EMSLobbyEvents.h"
+#include "Data/EMSLobbyEventsPDA.h"
 #include "EasyMultiplayerSession/EMSUtils.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
@@ -42,7 +42,7 @@ void AEMSLobbyGameModeBase::Logout(AController* Exiting) {
 	}
 }
 
-void AEMSLobbyGameModeBase::StartGame() {
+void AEMSLobbyGameModeBase::StartGameSeamless() {
 	UEasyMultiplayerSubsystem* EasyMultiplayerSubsystem = this->GetGameInstance()->GetSubsystem<UEasyMultiplayerSubsystem>();
 	if (EasyMultiplayerSubsystem) {
 		this->bUseSeamlessTravel;
