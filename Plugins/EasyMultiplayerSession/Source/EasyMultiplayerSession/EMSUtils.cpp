@@ -3,7 +3,7 @@
 #include "EMSUtils.h"
 
 void UEMSUtils::ShowDebugMessage(FString message, FColor color, float time) {
-	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, time, color, message);
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, time, color, message, false);
 }
 
 void UEMSUtils::ShowPersistentDebugMessage(FString message, FColor color) {

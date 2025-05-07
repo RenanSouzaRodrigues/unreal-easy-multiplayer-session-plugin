@@ -12,7 +12,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEasyMultiplayerDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerSessionCreatedDelegate, bool, bSessionCreated);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEasyMultiplayerFindSessionDelegate, TArray<FEMSOnlineSessionSearchResult>, sessionResult, bool, bSuccess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEasyMultiplayerFindSessionDelegate, const TArray<FEMSOnlineSessionSearchResult>&, sessionResult, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerJoinSessionDelegate, EEMSJoinSessionCompleteResult,  joinResult);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerStartSessionDeletage, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerDestroySessionDelegate, bool, bSuccess);

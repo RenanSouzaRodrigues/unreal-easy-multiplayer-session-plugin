@@ -131,7 +131,8 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult) {
 	// Online subsystem session interface validation. It is good to aways be sure. -Renan
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
-		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
+		TArray<FEMSOnlineSessionSearchResult> emptySearchResult = TArray<FEMSOnlineSessionSearchResult>();
+		this->OnSessionFoundEvent.Broadcast(emptySearchResult, false);
 		return;
 	}
 
@@ -149,7 +150,8 @@ void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult)
 	if (!localPlayer) {
 		UEMSUtils::ShowDebugMessage(TEXT("No local player controller found. Aborting Find Session Process. A Local Player Controller is required in order search for sessions"), FColor::Red);
 		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
-		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
+		TArray<FEMSOnlineSessionSearchResult> emptySearchResult = TArray<FEMSOnlineSessionSearchResult>();
+		this->OnSessionFoundEvent.Broadcast(emptySearchResult, false);
 		return;
 	}
 
@@ -157,7 +159,8 @@ void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult)
 	// If there is any error when the subsystem tries to retrieve the list of sessions to join, I simple send a log and broadcast a false response. -Renan
 	if (!this->OnlineSubsystemSessionInterface->FindSessions(*localPlayer->GetPreferredUniqueNetId(), this->OnlineSessionSearch.ToSharedRef())) {
 		this->OnlineSubsystemSessionInterface->ClearOnFindSessionsCompleteDelegate_Handle(this->FindSessionDelegateHandle);
-		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
+		TArray<FEMSOnlineSessionSearchResult> emptySearchResult = TArray<FEMSOnlineSessionSearchResult>();
+		this->OnSessionFoundEvent.Broadcast(emptySearchResult, false);
 	}
 }
 
@@ -201,7 +204,10 @@ void UEasyMultiplayerSubsystem::JoinSession(const FEMSOnlineSessionSearchResult&
 }
 
 void UEasyMultiplayerSubsystem::ConnectToJoinedSession() {
-	if (!this->IsOnlineSubsystemInterfaceValid()) return;
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to connect to session. Aborting process."), FColor::Red);
+		return;
+	}
 
 	FString ConnectionAddress;
 	this->OnlineSubsystemSessionInterface->GetResolvedConnectString(NAME_GameSession, ConnectionAddress);
@@ -270,7 +276,8 @@ void UEasyMultiplayerSubsystem::OnCreateSessionEventListenerCallback(FName creat
 
 void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSuccessfull) {
 	if (this->IsOnlineSubsystemInterfaceValid()) {
-		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
+		TArray<FEMSOnlineSessionSearchResult> emptySearchResult = TArray<FEMSOnlineSessionSearchResult>();
+		this->OnSessionFoundEvent.Broadcast(emptySearchResult, false);
 		return;
 	}
 
@@ -279,7 +286,8 @@ void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSucc
 	// In case there is no session results but the process still returns a success, broadcast the event with no success because there is no list
 	// of sessions to join. I don't know if broadcasting a false value is a good choice. But at this point, I think is enough. -Renan
 	if (this->OnlineSessionSearch->SearchResults.Num() == 0) {
-		this->OnSessionFoundEvent.Broadcast(TArray<FEMSOnlineSessionSearchResult>(), false);
+		TArray<FEMSOnlineSessionSearchResult> emptySearchResult = TArray<FEMSOnlineSessionSearchResult>();
+		this->OnSessionFoundEvent.Broadcast(emptySearchResult, false);
 	}
 	
 	// This is cached so I can use this later when the user choose a found session. Also, this is relevant to be able to use
@@ -296,6 +304,7 @@ void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSucc
 	UEMSUtils::ShowDebugMessage(TEXT("Find Session Results returned successfully!"), FColor::Green);
 }
 
+// Join Session Callback Function
 void UEasyMultiplayerSubsystem::OnJoinSessionEventListenerCallback(FName joinedSessionName, EOnJoinSessionCompleteResult::Type joinResultType) {
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
 		this->OnSessionJoinedEvent.Broadcast(this->ConvertJoinResult(joinResultType));
@@ -308,6 +317,7 @@ void UEasyMultiplayerSubsystem::OnJoinSessionEventListenerCallback(FName joinedS
 	if (joinResultType == EOnJoinSessionCompleteResult::Success) UEMSUtils::ShowDebugMessage(TEXT("Session Joined Successfully!"), FColor::Green);
 }
 
+// Start Session Callback Function
 void UEasyMultiplayerSubsystem::OnStartSessionEventListenerCallback(FName sessionName, bool bWasSuccessful) {
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
 		this->OnSessionStartedEvent.Broadcast(false);
@@ -341,7 +351,7 @@ void UEasyMultiplayerSubsystem::OnDestroySessionEventListenerCallback(FName sess
 }
 
 bool UEasyMultiplayerSubsystem::IsOnlineSubsystemInterfaceValid() const {
-	if (this->OnlineSubsystemSessionInterface.IsValid()) {
+	if (!this->OnlineSubsystemSessionInterface.IsValid()) {
 		UEMSUtils::ShowDebugMessage(TEXT("Online Subsytem Session Interface is invalid, Something went wrong on the engine lifecycle."), FColor::Red);
 		return false;
 	}
