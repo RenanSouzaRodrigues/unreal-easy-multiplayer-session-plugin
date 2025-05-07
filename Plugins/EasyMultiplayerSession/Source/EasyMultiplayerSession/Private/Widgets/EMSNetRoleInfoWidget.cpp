@@ -3,9 +3,16 @@
 
 #include "Widgets/EMSNetRoleInfoWidget.h"
 
+#include "EasyMultiplayerSession/EMSUtils.h"
 #include "GameFramework/PlayerState.h"
 
 void UEMSNetRoleInfoWidget::BuildNetRoleNames(APawn* pawnReference) {
+	if (pawnReference == nullptr) {
+		this->PlayerName = this->LocalNetRoleName = this->RemoteNetRoleName = FString("undefined");
+		UEMSUtils::ShowPersistentDebugMessage(TEXT("Invalid Pawn to display information on Roles"), FColor::Red);
+		return;
+	}
+	
 	ENetRole localRole = pawnReference->GetLocalRole();
 	ENetRole remoteRole = pawnReference->GetRemoteRole();
 
