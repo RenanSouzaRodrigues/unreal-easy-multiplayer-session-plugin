@@ -101,5 +101,8 @@
 				"Mac"
 			]
 		}
+	],
+	"TargetPlatforms": [
+		"Windows"
 	]
 }
