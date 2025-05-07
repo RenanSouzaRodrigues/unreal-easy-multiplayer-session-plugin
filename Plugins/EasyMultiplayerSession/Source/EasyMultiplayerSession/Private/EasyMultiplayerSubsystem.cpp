@@ -209,10 +209,19 @@ void UEasyMultiplayerSubsystem::ConnectToJoinedSession() {
 		return;
 	}
 
-	FString ConnectionAddress;
-	this->OnlineSubsystemSessionInterface->GetResolvedConnectString(NAME_GameSession, ConnectionAddress);
+	// The online subsystem holds the reference to the joined session. This way I can grab the connection string address
+	// at any point in time. -Renan
+	FString connectionAddress;
+	this->OnlineSubsystemSessionInterface->GetResolvedConnectString(NAME_GameSession, connectionAddress);
+
+	// I validate the connection string so the user can't even try to connect to the empty address. -Renan
+	if (connectionAddress.IsEmpty()) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to connect to joined session. Could not retrieve the session connection string addres."), FColor::Red);
+		return;
+	}
+	
 	if (APlayerController* playerController = this->GetGameInstance()->GetFirstLocalPlayerController()) {
-		playerController->ClientTravel(ConnectionAddress, ETravelType::TRAVEL_Absolute);
+		playerController->ClientTravel(connectionAddress, ETravelType::TRAVEL_Absolute);
 	}
 }
 
