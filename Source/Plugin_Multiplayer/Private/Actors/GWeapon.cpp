@@ -34,7 +34,7 @@ void AGWeapon::BeginPlay() {
 		this->PlayerDetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		this->PlayerDetectionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	}
-}
+} 
 
 void AGWeapon::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
