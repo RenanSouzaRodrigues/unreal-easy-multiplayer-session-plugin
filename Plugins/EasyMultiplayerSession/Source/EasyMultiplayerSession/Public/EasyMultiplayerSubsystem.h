@@ -39,7 +39,7 @@ public:
 	FEasyMultiplayerDestroySessionDelegate OnSessionDestroyedEvent;
 	
 private:
-	// This property can hold the configurations to override if the user wants. -Renan
+	// This property can hold the configurations to override when the user wants to create a new session. -Renan
 	class UEMSSessionCreationSettingsPDA* SessionCreationSettingsOverride;
 	
 	// As I can see this is just a typedef of some sort of TMap. But this is fine. -Renan
@@ -97,7 +97,7 @@ public:
 	 * @param maxOnlineSessionsSearchResult Max number of sessions to return.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void FindSession(int32 maxOnlineSessionsSearchResult);
+	void FindSession(int32 maxOnlineSessionsSearchResult, float timeoutInSeconds = 120);
 
 	/**
 	 * Method used to join a session

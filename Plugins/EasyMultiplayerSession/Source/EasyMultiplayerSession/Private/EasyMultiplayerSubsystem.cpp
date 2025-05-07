@@ -128,7 +128,7 @@ void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, F
 	}
 }
 
-void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult) {
+void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult, float timeoutInSeconds) {
 	// Online subsystem session interface validation. It is good to aways be sure. -Renan
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
 		TArray<FEMSOnlineSessionSearchResult> emptySearchResult = TArray<FEMSOnlineSessionSearchResult>();
@@ -142,6 +142,8 @@ void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult)
 	this->OnlineSessionSearch = MakeShareable(new FOnlineSessionSearch);
 	this->OnlineSessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL";
 	this->OnlineSessionSearch->MaxSearchResults = maxOnlineSessionsSearchResult;
+	this->OnlineSessionSearch->TimeoutInSeconds = timeoutInSeconds;
+	// TODO: Study the documentation and make more tests to see what else I can pass here
 	this->OnlineSessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 	
 	const ULocalPlayer* localPlayer = this->GetWorld()->GetFirstLocalPlayerFromController();

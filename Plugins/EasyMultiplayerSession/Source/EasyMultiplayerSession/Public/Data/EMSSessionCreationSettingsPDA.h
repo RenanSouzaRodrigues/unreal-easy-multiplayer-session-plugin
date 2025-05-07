@@ -6,9 +6,6 @@
 #include "Engine/DataAsset.h"
 #include "EMSSessionCreationSettingsPDA.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class EASYMULTIPLAYERSESSION_API UEMSSessionCreationSettingsPDA : public UPrimaryDataAsset {
 	GENERATED_BODY()
