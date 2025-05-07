@@ -262,6 +262,17 @@ void UEasyMultiplayerSubsystem::DestroySession() {
 }
 
 void UEasyMultiplayerSubsystem::OpenGameLevelAsHostServer(FString pathToLobby) {
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to open game level as host. Aborting process."), FColor::Red);
+		return;
+	}
+
+	FNamedOnlineSession* existingSession = this->OnlineSubsystemSessionInterface->GetNamedSession(NAME_GameSession);
+	if (existingSession == nullptr) {
+		UEMSUtils::ShowDebugMessage(TEXT("Error: There is no created session. Unable to open game level as host. Aborting process"), FColor::Red);
+		return;
+	}
+	
 	UWorld* world = this->GetWorld();
 	if (!world) {
 		UEMSUtils::ShowDebugMessage(TEXT("Unable to retrive world information to open lobby level. Aborting process"), FColor::Red);

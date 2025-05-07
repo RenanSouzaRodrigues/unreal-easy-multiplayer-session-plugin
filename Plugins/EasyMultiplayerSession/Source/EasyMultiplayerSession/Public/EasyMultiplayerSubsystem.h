@@ -100,21 +100,35 @@ public:
 	void FindSession(int32 maxOnlineSessionsSearchResult, float timeoutInSeconds = 120);
 
 	/**
-	 * Method used to join a session
+	 * Method used to join a session. This method broadcast a delegate with the session join result. You can bind
+	 * a Custom Event Listener to the OnSessionJoinedEvent to handle the join session result.
 	 * @param onlineSessionSearchResult The session result that can be found using EasyMultiplayerSession::FindSessions method
 	 */
 	UFUNCTION(BlueprintCallable)
 	void JoinSession(const FEMSOnlineSessionSearchResult& onlineSessionSearchResult);
 
+	/**
+	 * Method used to connect to a joined session. If there is a valid joined session cached on the subsystem, this method will handle
+	 * the Client travel. Does not broadcast delegates.
+	 */
 	UFUNCTION(BlueprintCallable)
 	void ConnectToJoinedSession();
 	
 	UFUNCTION(BlueprintCallable)
 	void StartSession();
 
+	/**
+	* Method to destroy the current active session. This method broadcast a delegate with the destroy session result. You can bind
+	 * a Custom Event Listener to the OnSessionDestroyedEvent to handle the destroy session result.
+	 */
 	UFUNCTION(BlueprintCallable)
 	void DestroySession();
 
+	/**
+	 * Method to Open a level as the host server. This method must be used after the host creates a session.
+	 * @param pathToLobby String with the map name to open as server. Example: If your map is located under 'Content/Maps/MyMap.umap' just provide
+	 * the following string: 'Maps/MyMap'
+	 */
 	UFUNCTION(BlueprintCallable)
 	void OpenGameLevelAsHostServer(FString pathToLobby);
 
