@@ -17,7 +17,7 @@ public:
 	 * @param color The color of the message. Has a default color of FColor::Orange
 	 * @param time The amount of time in seconds the message needs to stay visible. Has a default value of 10 seconds
 	 */
-	void static ShowDebugMessage(FString message, FColor color = FColor::Orange, float time = 10);
+	void static ShowDebugMessage(FString message, FColor color = FColor::Orange, float time = 100);
 
 	/**
 	 * Method that displays a perpetual message on the game screen. Only available on debug or development builds

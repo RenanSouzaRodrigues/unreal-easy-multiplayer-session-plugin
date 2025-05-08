@@ -8,8 +8,6 @@
 #include "Structs/FEMSOnlineSessionSearchResult.h"
 #include "EasyMultiplayerSubsystem.generated.h"
 
-#define MATCH_TYPE FName("MatchType")
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEasyMultiplayerDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEasyMultiplayerSessionCreatedDelegate, bool, bSessionCreated);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEasyMultiplayerFindSessionDelegate, const TArray<FEMSOnlineSessionSearchResult>&, sessionResult, bool, bSuccess);
@@ -132,6 +130,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OpenGameLevelAsHostServer(FString pathToLobby);
 
+
+	UFUNCTION(BlueprintCallable)
+	bool FilterSessionResultsByMatchType(const TArray<FEMSOnlineSessionSearchResult>& Results, const FString& MatchTypeName, FEMSOnlineSessionSearchResult& OutResult);
+
 protected:
 	// Internal callbacks for the events that ared called by the session funcions. -Renan
 	void OnCreateSessionEventListenerCallback(FName createdSessionName, bool bWasSuccessfullCreated);
@@ -142,7 +144,6 @@ protected:
 
 private:
 	bool IsOnlineSubsystemInterfaceValid() const;
-	FEMSOnlineSessionSearchResult ConvertSessionResult(const FOnlineSessionSearchResult& sessionResult);
+	FEMSOnlineSessionSearchResult ConvertSessionResult(FOnlineSessionSearchResult sessionResult);
 	EEMSJoinSessionCompleteResult ConvertJoinResult(const EOnJoinSessionCompleteResult::Type joinResultType);
-	FOnlineSessionSearchResult GetRealSessionDataFromSessionPlaceholderData(FEMSOnlineSessionSearchResult sessionToFind);
 };

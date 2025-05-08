@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSessionSettings.h"
 #include "FEMSOnlineSessionSearchResult.generated.h"
 
 USTRUCT(Blueprintable, BlueprintType)
@@ -26,8 +27,10 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	FString MatchType;
 
+	FOnlineSessionSearchResult OriginalSearchResult;
+
 public:
 	bool IsValid() const {
-		return this->SessionId.Len() > 0;
+		return this->OriginalSearchResult.IsValid();
 	}
 };
