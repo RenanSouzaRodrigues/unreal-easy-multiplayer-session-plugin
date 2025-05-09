@@ -11,13 +11,15 @@ class EASYMULTIPLAYERSESSION_API UEMSNetRoleInfoWidget : public UUserWidget {
 	GENERATED_BODY()
 	
 private:
-	FString LocalNetRoleName;
-	FString RemoteNetRoleName;
-	FString PlayerName;
+	FString LocalNetRoleName { FString("undefined") };
+	FString RemoteNetRoleName { FString("undefined") };
+	FString PlayerName { FString("undefined") };
 	
 public:
+	virtual void NativeConstruct() override;
+	
 	UFUNCTION(BlueprintCallable)
-	void BuildNetRoleNames(APawn* pawnReference);
+	void BuildNetRoleNames(APawn* pawnReference, APlayerController* playerController);
 
 protected:
 	UFUNCTION(BlueprintCallable, BlueprintPure)
@@ -28,4 +30,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	FText GetPawnPlayerName();
+
+private:
+	FString GetRoleName(ENetRole role);
 };

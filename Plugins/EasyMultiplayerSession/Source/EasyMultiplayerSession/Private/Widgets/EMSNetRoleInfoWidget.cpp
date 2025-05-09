@@ -6,7 +6,19 @@
 #include "EasyMultiplayerSession/EMSUtils.h"
 #include "GameFramework/PlayerState.h"
 
-void UEMSNetRoleInfoWidget::BuildNetRoleNames(APawn* pawnReference) {
+void UEMSNetRoleInfoWidget::NativeConstruct() {
+	Super::NativeConstruct();
+
+	this->PlayerName = this->LocalNetRoleName = this->RemoteNetRoleName = FString("undefined");
+	
+	if (APlayerController* playerController = this->GetOwningPlayer()) {
+		if (APawn* playerPawn = playerController->GetPawn()) {
+			this->BuildNetRoleNames(playerPawn, playerController);
+		}
+	}
+}
+
+void UEMSNetRoleInfoWidget::BuildNetRoleNames(APawn* pawnReference, APlayerController* playerController) {
 	if (pawnReference == nullptr) {
 		this->PlayerName = this->LocalNetRoleName = this->RemoteNetRoleName = FString("undefined");
 		UEMSUtils::ShowPersistentDebugMessage(TEXT("Invalid Pawn to display information on Roles"), FColor::Red);
@@ -16,24 +28,13 @@ void UEMSNetRoleInfoWidget::BuildNetRoleNames(APawn* pawnReference) {
 	ENetRole localRole = pawnReference->GetLocalRole();
 	ENetRole remoteRole = pawnReference->GetRemoteRole();
 
-	switch (localRole) {
-		case ROLE_Authority: this->LocalNetRoleName = FString("Authority"); break;
-		case ROLE_AutonomousProxy: this->LocalNetRoleName = FString("Autonomous Proxy"); break;
-		case ROLE_SimulatedProxy: this->LocalNetRoleName = FString("Simulated Proxy"); break;
-		case ROLE_None: this->LocalNetRoleName = FString("None"); break;
-		default: this->LocalNetRoleName = FString("None");
-	}
-
-	switch (remoteRole) {
-		case ROLE_Authority: this->RemoteNetRoleName = FString("Authority"); break;
-		case ROLE_AutonomousProxy: this->RemoteNetRoleName = FString("Autonomous Proxy"); break;
-		case ROLE_SimulatedProxy: this->RemoteNetRoleName = FString("Simulated Proxy"); break;
-		case ROLE_None: this->RemoteNetRoleName = FString("None"); break;
-		default: this->RemoteNetRoleName = FString("None");
-	}
-
-	if (auto playerState = pawnReference->GetController()->GetPlayerState<APlayerState>()) {
+	this->LocalNetRoleName = this->GetRoleName(localRole);
+	this->RemoteNetRoleName = this->GetRoleName(remoteRole);
+	
+	if (APlayerState* playerState = playerController->GetPlayerState<APlayerState>()) {
 		this->PlayerName = playerState->GetPlayerName();
+	} else {
+		this->PlayerName = FString("No Controller Found");
 	}
 }
 
@@ -47,4 +48,13 @@ FText UEMSNetRoleInfoWidget::GetPawnRemoteNetRoleName() {
 
 FText UEMSNetRoleInfoWidget::GetPawnPlayerName() {
 	return FText::FromString(this->PlayerName);
+}
+
+FString UEMSNetRoleInfoWidget::GetRoleName(ENetRole role) {
+	switch (role) {
+	case ROLE_Authority: return FString("Authority");
+	case ROLE_AutonomousProxy: return FString("Autonomous Proxy");
+	case ROLE_SimulatedProxy: return FString("Simulated Proxy");
+	default: return FString("None");
+	}
 }

@@ -64,4 +64,3 @@ bool AGPlayerCharacter::IsPlayerSprinting() const {
 bool AGPlayerCharacter::IsPlayerInAir() const {
 	return this->GetCharacterMovement()->IsFalling();
 }
-
