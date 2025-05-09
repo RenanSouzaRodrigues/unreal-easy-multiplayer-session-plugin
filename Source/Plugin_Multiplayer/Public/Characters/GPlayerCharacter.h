@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GPlayerCharacter.generated.h"
 
 UCLASS()
@@ -23,20 +24,29 @@ public:
 	UPROPERTY(EditAnywhere, Category="Actor Configuration")
 	float SprintMovementSpeed { 800 };
 
+	UPROPERTY(Replicated)
+	class AGWeapon* OverlappingWeapon;
+
 private:
 	bool bIsSprinting { false };
 	
 public:
 	AGPlayerCharacter();
 
+	// this function is where I register variables to be replicated **Everything using UPROPERTY(Replicated)**
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	// Getters and Setters
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	float GetPlayerVelocityLength() const;
+	FORCEINLINE float GetPlayerVelocityLength() const { return this->GetVelocity().Length(); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	bool IsPlayerSprinting() const;
+	FORCEINLINE bool IsPlayerSprinting() const { return this->bIsSprinting; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	bool IsPlayerInAir() const;
+	FORCEINLINE bool IsPlayerInAir() const { return this->GetCharacterMovement()->IsFalling(); };
+	
+	void SetOverlappedWeapon(AGWeapon* weapon);
 
 protected:
 	virtual void BeginPlay() override;

@@ -2,8 +2,14 @@
 
 #include "Actors/GWeapon.h"
 
+#include "Characters/GPlayerCharacter.h"
 #include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
 
+
+// =============================================================
+// LIFE CYCLE
+// =============================================================
 AGWeapon::AGWeapon() {
 	this->PrimaryActorTick.bCanEverTick = false;
 
@@ -24,19 +30,39 @@ AGWeapon::AGWeapon() {
 	// Disables the player detection sphere collision to be sure this only runs on the server. -Renan
 	this->PlayerDetectionSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	this->PlayerDetectionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	this->PickupWidget = this->CreateDefaultSubobject<UWidgetComponent>("Pickup Widget");
+	this->PickupWidget->SetupAttachment(this->WeaponMesh);
 }
 
 void AGWeapon::BeginPlay() {
 	Super::BeginPlay();
 
+	// At the beginning, the interaction hud is aways hidden. -Renan
+	this->ShowInteractionHud(false);
+	
 	// If this actor is running on the server, them I enable the collision of the player detection sphere. -Renan
-	if (this->HasAuthority()) {
+	if (this->HasAuthority() && IsValid(this->PlayerDetectionSphere)) {
 		this->PlayerDetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		this->PlayerDetectionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+		this->PlayerDetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereBeginOverlap);
+		// this->PlayerDetectionSphere->OnComponentEndOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereEndOverlap);
+	}
+}
+
+
+
+// =============================================================
+// CLASS METHODS
+// =============================================================
+void AGWeapon::OnDetectPlayerSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	// validates if the pawn overlapping is the player character
+	AGPlayerCharacter* playerCharacter = Cast<AGPlayerCharacter>(OtherActor);
+	if (playerCharacter && this->PickupWidget) {
+		playerCharacter->SetOverlappedWeapon(this);
 	}
 } 
 
-void AGWeapon::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
+void AGWeapon::ShowInteractionHud(bool value) {
+	if (this->PickupWidget) this->PickupWidget->SetVisibility(value);
 }
-
