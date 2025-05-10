@@ -32,24 +32,11 @@ private:
 	
 public:
 	AGPlayerCharacter();
-
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	// this function is where I register variables to be replicated **Everything using UPROPERTY(Replicated)**
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
-	// Getters and Setters
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	FORCEINLINE float GetPlayerVelocityLength() const { return this->GetVelocity().Length(); }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	FORCEINLINE bool IsPlayerSprinting() const { return this->bIsSprinting; }
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	FORCEINLINE bool IsPlayerInAir() const { return this->GetCharacterMovement()->IsFalling(); };
-	
-	void SetOverlappedWeapon(AGWeapon* weapon);
-
-protected:
-	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void MovePlayer(float valueX, float valueY);
@@ -66,6 +53,16 @@ protected:
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void StopSprint();
 	
-public:
-	virtual void Tick(float DeltaTime) override;
+	
+	// Getters and Setters
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
+	FORCEINLINE float GetPlayerVelocityLength() const { return this->GetVelocity().Length(); }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
+	FORCEINLINE bool IsPlayerSprinting() const { return this->bIsSprinting; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
+	FORCEINLINE bool IsPlayerInAir() const { return this->GetCharacterMovement()->IsFalling(); };
+	
+	void SetOverlappedWeapon(AGWeapon* weapon);
 };

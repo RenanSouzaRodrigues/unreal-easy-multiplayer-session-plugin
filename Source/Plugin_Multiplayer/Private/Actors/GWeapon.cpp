@@ -42,7 +42,7 @@ void AGWeapon::BeginPlay() {
 	this->ShowInteractionHud(false);
 	
 	// If this actor is running on the server, them I enable the collision of the player detection sphere. -Renan
-	if (this->HasAuthority() && IsValid(this->PlayerDetectionSphere)) {
+	if (this->HasAuthority() && this->PlayerDetectionSphere) {
 		this->PlayerDetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		this->PlayerDetectionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		this->PlayerDetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereBeginOverlap);
@@ -58,8 +58,9 @@ void AGWeapon::BeginPlay() {
 void AGWeapon::OnDetectPlayerSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	// validates if the pawn overlapping is the player character
 	AGPlayerCharacter* playerCharacter = Cast<AGPlayerCharacter>(OtherActor);
-	if (playerCharacter && this->PickupWidget) {
+	if (playerCharacter) {
 		playerCharacter->SetOverlappedWeapon(this);
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Black, TEXT("player overlapped with weapon"));
 	}
 } 
 

@@ -13,7 +13,8 @@
 // =========================================================================
 AGPlayerCharacter::AGPlayerCharacter() {
 	PrimaryActorTick.bCanEverTick = true;
-
+	this->bReplicates = true;
+	
 	this->CameraSpringArm = this->CreateDefaultSubobject<USpringArmComponent>("Camera Spring Arm");
 	this->CameraSpringArm->SetupAttachment(this->GetRootComponent());
 	this->CameraSpringArm->bUsePawnControlRotation = true;
@@ -31,7 +32,11 @@ void AGPlayerCharacter::BeginPlay() {
 
 void AGPlayerCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-}
+
+	if (this->OverlappingWeapon) {
+		this->OverlappingWeapon->ShowInteractionHud(true);
+	}
+} 
 
 
 // =========================================================================
@@ -40,7 +45,7 @@ void AGPlayerCharacter::Tick(float DeltaTime) {
 void AGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	// on this macros I cant use the 'this' keyword to refence variables
-	DOREPLIFETIME_CONDITION(AGPlayerCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(AGPlayerCharacter, OverlappingWeapon);
 }
 
 
@@ -80,5 +85,4 @@ void AGPlayerCharacter::PerformJump() {
 void AGPlayerCharacter::SetOverlappedWeapon(AGWeapon* weapon) {
 	// this value change will trigger the Replication Delegate AGPlayerCharacter::GetLifetimeReplicatedProps 
 	this->OverlappingWeapon = weapon;
-	this->OverlappingWeapon->ShowInteractionHud(true);
 }

@@ -1,24 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Widgets/EMSNetRoleInfoWidget.h"
-
 #include "EasyMultiplayerSession/EMSUtils.h"
 #include "GameFramework/PlayerState.h"
 
-void UEMSNetRoleInfoWidget::NativeConstruct() {
-	Super::NativeConstruct();
-
-	this->PlayerName = this->LocalNetRoleName = this->RemoteNetRoleName = FString("undefined");
-	
-	if (APlayerController* playerController = this->GetOwningPlayer()) {
-		if (APawn* playerPawn = playerController->GetPawn()) {
-			this->BuildNetRoleNames(playerPawn, playerController);
-		}
-	}
-}
-
-void UEMSNetRoleInfoWidget::BuildNetRoleNames(APawn* pawnReference, APlayerController* playerController) {
+void UEMSNetRoleInfoWidget::BuildCharacterNetInfo(APawn* pawnReference, APlayerState* playerState) {
 	if (pawnReference == nullptr) {
 		this->PlayerName = this->LocalNetRoleName = this->RemoteNetRoleName = FString("undefined");
 		UEMSUtils::ShowPersistentDebugMessage(TEXT("Invalid Pawn to display information on Roles"), FColor::Red);
@@ -31,10 +17,10 @@ void UEMSNetRoleInfoWidget::BuildNetRoleNames(APawn* pawnReference, APlayerContr
 	this->LocalNetRoleName = this->GetRoleName(localRole);
 	this->RemoteNetRoleName = this->GetRoleName(remoteRole);
 	
-	if (APlayerState* playerState = playerController->GetPlayerState<APlayerState>()) {
+	if (playerState) {
 		this->PlayerName = playerState->GetPlayerName();
 	} else {
-		this->PlayerName = FString("No Controller Found");
+		this->PlayerName = FString("No player state provided");
 	}
 }
 

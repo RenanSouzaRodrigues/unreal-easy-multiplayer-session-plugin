@@ -16,11 +16,9 @@ private:
 	FString PlayerName { FString("undefined") };
 	
 public:
-	virtual void NativeConstruct() override;
-	
 	UFUNCTION(BlueprintCallable)
-	void BuildNetRoleNames(APawn* pawnReference, APlayerController* playerController);
-
+	void BuildCharacterNetInfo(class APawn* pawnReference, class APlayerState* playerState);
+	
 protected:
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	FText GetPawnLocalNetRoleName();
