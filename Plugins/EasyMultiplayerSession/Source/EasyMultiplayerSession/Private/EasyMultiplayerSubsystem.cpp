@@ -9,8 +9,12 @@
 
 // This session plugin is ready to be tested but, still need to do somethings.
 // TODO: Create a way to Invite Steam Friends.
-// TODO: Create a way to enter on the a friend session.
+// TODO: Create a way to enter on a friend session.
+// I dont know if this can be done automatically when the game has a proper Steam ID. -Renan
 
+// ===================================================
+// Unreal Methods
+// ===================================================
 UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 	// I'm using this approach because these especific delegates have their own way to be initialized and binded to events.
 	// This way I can call the construction methods of all of then and start bind my subsystem events the way I need.
@@ -44,11 +48,27 @@ UEasyMultiplayerSubsystem::UEasyMultiplayerSubsystem():
 	this->OnlineSubsystemSessionInterface = onlineSubsystemReference->GetSessionInterface();
 }
 
-void UEasyMultiplayerSubsystem::OverrideSessionCreationSettings(UEMSSessionCreationSettingsPDA* settingsToOverride) {
-	this->SessionCreationSettingsOverride = settingsToOverride;
+
+
+// ===================================================
+// Online Subsystem
+// ===================================================
+bool UEasyMultiplayerSubsystem::IsOnlineSubsystemInterfaceValid() const {
+	if (!this->OnlineSubsystemSessionInterface.IsValid()) {
+		UEMSUtils::ShowDebugMessage(TEXT("Online Subsytem Session Interface is invalid, Something went wrong on the engine lifecycle."), FColor::Red);
+		return false;
+	}
+	return true;
 }
 
 
+
+// ===================================================
+// Create Session
+// ===================================================
+void UEasyMultiplayerSubsystem::OverrideSessionCreationSettings(UEMSSessionCreationSettingsPDA* settingsToOverride) {
+	this->SessionCreationSettingsOverride = settingsToOverride;
+}
 
 void UEasyMultiplayerSubsystem::CreateSession(int32 numberOfPublicConnections, FString matchTypeName) {
 	// Check if the online subsystem session interface I have is valid. If not I'm simply returning void and
@@ -147,8 +167,33 @@ void UEasyMultiplayerSubsystem::OnCreateSessionEventListenerCallback(FName creat
 	UEMSUtils::ShowDebugMessage(TEXT("Session created successfully!"), FColor::Green);
 }
 
+void UEasyMultiplayerSubsystem::OpenGameLevelAsHostServer(FString pathToLobby) {
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to open game level as host. Aborting process."), FColor::Red);
+		return;
+	}
+
+	FNamedOnlineSession* existingSession = this->OnlineSubsystemSessionInterface->GetNamedSession(NAME_GameSession);
+	if (existingSession == nullptr) {
+		UEMSUtils::ShowDebugMessage(TEXT("Error: There is no created session. Unable to open game level as host. Aborting process"), FColor::Red);
+		return;
+	}
+	
+	UWorld* world = this->GetWorld();
+	if (!world) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to retrive world information to open lobby level. Aborting process"), FColor::Red);
+		return;
+	}
+
+	const FString finalPathName = FString::Printf(TEXT("/Game/%s?listen"), *pathToLobby);
+	world->ServerTravel(finalPathName);
+}
 
 
+
+// ===================================================
+// Find Session
+// ===================================================
 void UEasyMultiplayerSubsystem::FindSession(int32 maxOnlineSessionsSearchResult, float timeoutInSeconds) {
 	// Online subsystem session interface validation. It is good to aways be sure. -Renan
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
@@ -227,8 +272,39 @@ void UEasyMultiplayerSubsystem::OnFindSessionEventListenerCallback(bool bWasSucc
 	UEMSUtils::ShowDebugMessage(TEXT("Find Session Results returned successfully!"), FColor::Green);
 }
 
+bool UEasyMultiplayerSubsystem::FilterSessionResultsByMatchType(const TArray<FEMSOnlineSessionSearchResult>& Results, const FString& MatchTypeName, FEMSOnlineSessionSearchResult& OutResult) {
+	for (const auto& Result : Results) {
+		if (Result.MatchType == MatchTypeName) {
+			OutResult = Result;
+			return true;
+		}
+	}
+	return false;
+}
+
+// This function exists to translate the session result into something that can use the blueprint reflection system.
+// With this, I can aways look on the array of all the results and filter it and join the correct session result data. -Renan
+FEMSOnlineSessionSearchResult UEasyMultiplayerSubsystem::ConvertSessionResult(FOnlineSessionSearchResult sessionResult) {
+	// The result data is just converted to a FStruct that can be exposed to blueprints API. -Renan
+	FString matchTypeName;
+	sessionResult.Session.SessionSettings.Get(FName("MatchType"), matchTypeName);
+
+	FEMSOnlineSessionSearchResult result;
+	result.MatchType = matchTypeName;
+	result.SessionId = sessionResult.GetSessionIdStr();
+	result.PingInMs = sessionResult.PingInMs;
+	result.NumberOfPublicConnections = sessionResult.Session.NumOpenPublicConnections;
+	result.NumberOfPrivateConnections = sessionResult.Session.NumOpenPrivateConnections;
+	result.OriginalSearchResult = sessionResult;
+	
+	return result;
+}
 
 
+
+// ===================================================
+// Join Session
+// ===================================================
 void UEasyMultiplayerSubsystem::JoinSession(const FEMSOnlineSessionSearchResult& onlineSessionSearchResult) {
 	// I first validate the session search result because, if this is null or invalid there is no reason to try join this session. -Renan
 	if (!onlineSessionSearchResult.IsValid()) {
@@ -285,8 +361,47 @@ void UEasyMultiplayerSubsystem::OnJoinSessionEventListenerCallback(FName joinedS
 	if (joinResultType == EOnJoinSessionCompleteResult::Success) UEMSUtils::ShowDebugMessage(TEXT("Session Joined Successfully!"), FColor::Green);
 }
 
+// Same thing here. I can use this function to make use of the blueprint reflection system. -Renan
+EEMSJoinSessionCompleteResult UEasyMultiplayerSubsystem::ConvertJoinResult(const EOnJoinSessionCompleteResult::Type joinResultType) {
+	// In this case is just a simple Enum translation. -Renan
+	switch (joinResultType) {
+	case EOnJoinSessionCompleteResult::Success: return EEMSJoinSessionCompleteResult::Success;
+	case EOnJoinSessionCompleteResult::UnknownError: return EEMSJoinSessionCompleteResult::UnknownError;
+	case EOnJoinSessionCompleteResult::AlreadyInSession: return EEMSJoinSessionCompleteResult::AlreadyInSession;
+	case EOnJoinSessionCompleteResult::SessionIsFull: return EEMSJoinSessionCompleteResult::SessionIsFull;
+	case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress: return EEMSJoinSessionCompleteResult::CouldNotRetrieveAddress;
+	case EOnJoinSessionCompleteResult::SessionDoesNotExist: return EEMSJoinSessionCompleteResult::SessionDoesNotExist;
+	default: return EEMSJoinSessionCompleteResult::UnknownError;
+	}
+}
+
+void UEasyMultiplayerSubsystem::ConnectToJoinedSession() {
+	if (!this->IsOnlineSubsystemInterfaceValid()) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to connect to session. Aborting process."), FColor::Red);
+		return;
+	}
+
+	// The online subsystem holds the reference to the joined session. This way I can grab the connection string address
+	// at any point in time. -Renan
+	FString connectionAddress;
+	this->OnlineSubsystemSessionInterface->GetResolvedConnectString(NAME_GameSession, connectionAddress);
+
+	// I validate the connection string so the user can't even try to connect to the empty address. -Renan
+	if (connectionAddress.IsEmpty()) {
+		UEMSUtils::ShowDebugMessage(TEXT("Unable to connect to joined session. Could not retrieve the session connection string addres."), FColor::Red);
+		return;
+	}
+	
+	if (APlayerController* playerController = this->GetGameInstance()->GetFirstLocalPlayerController()) {
+		playerController->ClientTravel(connectionAddress, ETravelType::TRAVEL_Absolute);
+	}
+}
 
 
+
+// ===================================================
+// Start Session
+// ===================================================
 void UEasyMultiplayerSubsystem::StartSession() {
 	// simple validation. -Renan
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
@@ -318,6 +433,9 @@ void UEasyMultiplayerSubsystem::OnStartSessionEventListenerCallback(FName sessio
 
 
 
+// ===================================================
+// Destroy Session
+// ===================================================
 void UEasyMultiplayerSubsystem::DestroySession() {
 	// Simple validation. -Renan
 	if (!this->IsOnlineSubsystemInterfaceValid()) {
@@ -353,100 +471,4 @@ void UEasyMultiplayerSubsystem::OnDestroySessionEventListenerCallback(FName sess
 	}
 	
 	if (bWasSuccessful) UEMSUtils::ShowDebugMessage(TEXT("Session Destroyed Successfully!"), FColor::Green);
-}
-
-
-
-void UEasyMultiplayerSubsystem::OpenGameLevelAsHostServer(FString pathToLobby) {
-	if (!this->IsOnlineSubsystemInterfaceValid()) {
-		UEMSUtils::ShowDebugMessage(TEXT("Unable to open game level as host. Aborting process."), FColor::Red);
-		return;
-	}
-
-	FNamedOnlineSession* existingSession = this->OnlineSubsystemSessionInterface->GetNamedSession(NAME_GameSession);
-	if (existingSession == nullptr) {
-		UEMSUtils::ShowDebugMessage(TEXT("Error: There is no created session. Unable to open game level as host. Aborting process"), FColor::Red);
-		return;
-	}
-	
-	UWorld* world = this->GetWorld();
-	if (!world) {
-		UEMSUtils::ShowDebugMessage(TEXT("Unable to retrive world information to open lobby level. Aborting process"), FColor::Red);
-		return;
-	}
-
-	const FString finalPathName = FString::Printf(TEXT("/Game/%s?listen"), *pathToLobby);
-	world->ServerTravel(finalPathName);
-}
-
-void UEasyMultiplayerSubsystem::ConnectToJoinedSession() {
-	if (!this->IsOnlineSubsystemInterfaceValid()) {
-		UEMSUtils::ShowDebugMessage(TEXT("Unable to connect to session. Aborting process."), FColor::Red);
-		return;
-	}
-
-	// The online subsystem holds the reference to the joined session. This way I can grab the connection string address
-	// at any point in time. -Renan
-	FString connectionAddress;
-	this->OnlineSubsystemSessionInterface->GetResolvedConnectString(NAME_GameSession, connectionAddress);
-
-	// I validate the connection string so the user can't even try to connect to the empty address. -Renan
-	if (connectionAddress.IsEmpty()) {
-		UEMSUtils::ShowDebugMessage(TEXT("Unable to connect to joined session. Could not retrieve the session connection string addres."), FColor::Red);
-		return;
-	}
-	
-	if (APlayerController* playerController = this->GetGameInstance()->GetFirstLocalPlayerController()) {
-		playerController->ClientTravel(connectionAddress, ETravelType::TRAVEL_Absolute);
-	}
-}
-
-bool UEasyMultiplayerSubsystem::FilterSessionResultsByMatchType(const TArray<FEMSOnlineSessionSearchResult>& Results, const FString& MatchTypeName, FEMSOnlineSessionSearchResult& OutResult) {
-	for (const auto& Result : Results) {
-		if (Result.MatchType == MatchTypeName) {
-			OutResult = Result;
-			return true;
-		}
-	}
-	return false;
-}
-
-bool UEasyMultiplayerSubsystem::IsOnlineSubsystemInterfaceValid() const {
-	if (!this->OnlineSubsystemSessionInterface.IsValid()) {
-		UEMSUtils::ShowDebugMessage(TEXT("Online Subsytem Session Interface is invalid, Something went wrong on the engine lifecycle."), FColor::Red);
-		return false;
-	}
-	return true;
-}
-
-// This function exists to translate the session result into something that can use the blueprint reflection system.
-// With this, I can aways look on the array of all the results and filter it and join the correct session result data. -Renan
-FEMSOnlineSessionSearchResult UEasyMultiplayerSubsystem::ConvertSessionResult(FOnlineSessionSearchResult sessionResult) {
-	// The result data is just converted to a FStruct that can be exposed to blueprints API. -Renan
-	FString matchTypeName;
-	sessionResult.Session.SessionSettings.Get(FName("MatchType"), matchTypeName);
-
-	FEMSOnlineSessionSearchResult result;
-	result.MatchType = matchTypeName;
-	result.SessionId = sessionResult.GetSessionIdStr();
-	result.PingInMs = sessionResult.PingInMs;
-	result.NumberOfPublicConnections = sessionResult.Session.NumOpenPublicConnections;
-	result.NumberOfPrivateConnections = sessionResult.Session.NumOpenPrivateConnections;
-	result.OriginalSearchResult = sessionResult;
-	
-	return result;
-}
-
-// Same thing here. I can use this function to make use of the blueprint reflection system. -Renan
-EEMSJoinSessionCompleteResult UEasyMultiplayerSubsystem::ConvertJoinResult(const EOnJoinSessionCompleteResult::Type joinResultType) {
-	// In this case is just a simple Enum translation. -Renan
-	switch (joinResultType) {
-		case EOnJoinSessionCompleteResult::Success: return EEMSJoinSessionCompleteResult::Success;
-		case EOnJoinSessionCompleteResult::UnknownError: return EEMSJoinSessionCompleteResult::UnknownError;
-		case EOnJoinSessionCompleteResult::AlreadyInSession: return EEMSJoinSessionCompleteResult::AlreadyInSession;
-		case EOnJoinSessionCompleteResult::SessionIsFull: return EEMSJoinSessionCompleteResult::SessionIsFull;
-		case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress: return EEMSJoinSessionCompleteResult::CouldNotRetrieveAddress;
-		case EOnJoinSessionCompleteResult::SessionDoesNotExist: return EEMSJoinSessionCompleteResult::SessionDoesNotExist;
-		default: return EEMSJoinSessionCompleteResult::UnknownError;
-	}
 }
