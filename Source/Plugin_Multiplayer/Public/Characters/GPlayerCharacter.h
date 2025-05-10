@@ -57,7 +57,7 @@ public:
 	void SetOverlappedWeapon(AGWeapon* weapon);
 
 	UFUNCTION()
-	void OnRep_SetOverlappedWeapon();
+	void OnRep_SetOverlappedWeapon(AGWeapon* lastWeaponPointer);
 
 	
 

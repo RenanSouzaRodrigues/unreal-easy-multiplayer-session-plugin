@@ -39,7 +39,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Actor Components")
 	TObjectPtr<class UWidgetComponent> PickupWidget;
-
+	
 
 	
 	// ==================================================
@@ -57,6 +57,9 @@ protected:
 public:
 	UFUNCTION()
 	virtual void OnDetectPlayerSphereBeginOverlap(class UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	virtual void OnDetectPlayerSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex);
 	
 	UFUNCTION(BlueprintCallable)
 	void ShowInteractionHud(bool value); // This is a bad way of doing things, but replication is on the character at this points. -Renan

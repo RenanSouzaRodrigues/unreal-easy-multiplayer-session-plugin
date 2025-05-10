@@ -18,6 +18,7 @@ AGWeapon::AGWeapon() {
 	this->SetRootComponent(this->WeaponMesh);
 	this->WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	this->WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+
 	
 	// This is the initial state of collision so players dont trip on the gun. -Renan 
 	this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -44,7 +45,7 @@ void AGWeapon::BeginPlay() {
 		this->PlayerDetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		this->PlayerDetectionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		this->PlayerDetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereBeginOverlap);
-		// this->PlayerDetectionSphere->OnComponentEndOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereEndOverlap);
+		this->PlayerDetectionSphere->OnComponentEndOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereEndOverlap);
 	}
 }
 
@@ -60,7 +61,14 @@ void AGWeapon::OnDetectPlayerSphereBeginOverlap(UPrimitiveComponent* OverlappedC
 		playerCharacter->SetOverlappedWeapon(this);
 		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Black, TEXT("player overlapped with weapon"));
 	}
-} 
+}
+
+void AGWeapon::OnDetectPlayerSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex) {
+	AGPlayerCharacter* playerCharacter = Cast<AGPlayerCharacter>(OtherActor);
+	if (playerCharacter) {
+		playerCharacter->SetOverlappedWeapon(nullptr);
+	}
+}
 
 void AGWeapon::ShowInteractionHud(bool value) {
 	if (this->PickupWidget) this->PickupWidget->SetVisibility(value);

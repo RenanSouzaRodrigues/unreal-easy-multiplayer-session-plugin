@@ -44,6 +44,12 @@ void AGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 // Player Weapon Detection
 // =========================================================================
 void AGPlayerCharacter::SetOverlappedWeapon(AGWeapon* weapon) {
+	// The weapon in this case can be null because when the player end overlapping with the weapon,
+	// I set this reference to nullprt. -Renan
+	if (weapon == nullptr && this->OverlappingWeapon) {
+		this->OverlappingWeapon->ShowInteractionHud(false);
+	}
+	
 	// Changing this value will trigger the replication
 	this->OverlappingWeapon = weapon;
 	// This validation is only for the server, because the client will use the RepNotify to handle it.
@@ -55,9 +61,13 @@ void AGPlayerCharacter::SetOverlappedWeapon(AGWeapon* weapon) {
 	}
 }
 
-void AGPlayerCharacter::OnRep_SetOverlappedWeapon() {
+void AGPlayerCharacter::OnRep_SetOverlappedWeapon(AGWeapon* lastWeapon) {
 	if (this->OverlappingWeapon) {
 		this->OverlappingWeapon->ShowInteractionHud(true);
+	}
+
+	if (lastWeapon) {
+		lastWeapon->ShowInteractionHud(false);
 	}
 }
 
