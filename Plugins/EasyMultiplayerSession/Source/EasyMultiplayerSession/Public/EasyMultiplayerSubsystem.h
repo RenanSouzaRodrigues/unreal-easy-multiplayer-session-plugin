@@ -199,11 +199,17 @@ public:
 	void StartSession();
 
 private:
+	// This delegate is called by the online subsystem when it finishes the session start. -Renan
 	FOnStartSessionCompleteDelegate OnStartSessionEvent;
+
+	// This handle is used to store the delegate bind of OnStartSessionEvent. -Renan
 	FDelegateHandle StartSessionDelegateHandle;
+
+	// This is the callback function that handles the delegate response on StartSession. -Renan
 	void OnStartSessionEventListenerCallback(FName sessionName, bool bWasSuccessful);
 
 public:
+	// This is the event called when the Start Session process is done. This can also be used inside Blueprints. -Renan
 	UPROPERTY(BlueprintAssignable)
 	FEasyMultiplayerDestroySessionDelegate OnSessionDestroyedEvent;
 
@@ -221,11 +227,17 @@ public:
 	void DestroySession();
 	
 private:
+	// This delegate is called by the online subsystem when it finishes the session destroy. -Renan
 	FOnDestroySessionCompleteDelegate OnDestroySessionEvent;
+
+	// This handle is used to store the delegate bind of OnDestroySessionEvent. -Renan
 	FDelegateHandle DestroySessionDelegateHandle;
+
+	// This is the callback function that handles the delegate response on DestroySession. -Renan
 	void OnDestroySessionEventListenerCallback(FName sessionName, bool bWasSuccessful);
 	
 public:
+	// This is the event called when the Destroy Session process is done. This can also be used inside Blueprints. -Renan
 	UPROPERTY(BlueprintAssignable)
 	FEasyMultiplayerStartSessionDeletage OnSessionStartedEvent;
 };
