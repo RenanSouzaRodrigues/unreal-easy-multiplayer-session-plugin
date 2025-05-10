@@ -24,7 +24,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Actor Configuration")
 	float SprintMovementSpeed { 800 };
 
-	UPROPERTY(Replicated)
+	// ==============================================================
+	// Replicated Variables
+	// ==============================================================
+	UPROPERTY(ReplicatedUsing=OnRep_WeaponOverlapped)
 	class AGWeapon* OverlappingWeapon;
 
 private:
@@ -37,7 +40,16 @@ public:
 	// this function is where I register variables to be replicated **Everything using UPROPERTY(Replicated)**
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	// =================================================================
+	// REP NOTIFIES
+	// =================================================================
+	UFUNCTION()
+	void OnRep_WeaponOverlapped();
 
+
+	// =================================================================
+	// CLASS METHODS
+	// =================================================================
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void MovePlayer(float valueX, float valueY);
 

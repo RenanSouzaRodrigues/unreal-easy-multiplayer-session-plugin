@@ -1,11 +1,11 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Plugin_Multiplayer/Public/Characters/GPlayerCharacter.h"
-
 #include "Actors/GWeapon.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
+
 
 
 // =========================================================================
@@ -32,10 +32,6 @@ void AGPlayerCharacter::BeginPlay() {
 
 void AGPlayerCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-
-	if (this->OverlappingWeapon) {
-		this->OverlappingWeapon->ShowInteractionHud(true);
-	}
 } 
 
 
@@ -45,8 +41,20 @@ void AGPlayerCharacter::Tick(float DeltaTime) {
 void AGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	// on this macros I cant use the 'this' keyword to refence variables
-	DOREPLIFETIME(AGPlayerCharacter, OverlappingWeapon);
+	DOREPLIFETIME_CONDITION(AGPlayerCharacter, OverlappingWeapon, COND_OwnerOnly);
 }
+
+
+
+// =========================================================================
+// REP NOTIFIES
+// =========================================================================
+void AGPlayerCharacter::OnRep_WeaponOverlapped() {
+	if (this->OverlappingWeapon) {
+		this->OverlappingWeapon->ShowInteractionHud(true);
+	}
+}
+
 
 
 // =========================================================================
@@ -77,6 +85,7 @@ void AGPlayerCharacter::StopSprint() {
 void AGPlayerCharacter::PerformJump() {
 	this->Jump();
 }
+
 
 
 // =========================================================================
