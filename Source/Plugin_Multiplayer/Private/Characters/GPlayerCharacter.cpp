@@ -6,10 +6,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 
-
-
 // =========================================================================
-// LIFE CYCLE
+// Unreal Methods
 // =========================================================================
 AGPlayerCharacter::AGPlayerCharacter() {
 	PrimaryActorTick.bCanEverTick = true;
@@ -34,22 +32,30 @@ void AGPlayerCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 } 
 
-
-// =========================================================================
-// REPLICATION
-// =========================================================================
 void AGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	// on this macros I cant use the 'this' keyword to refence variables
+	// on this macros I cant use the 'this' keyword to refence variables. -Renan
 	DOREPLIFETIME_CONDITION(AGPlayerCharacter, OverlappingWeapon, COND_OwnerOnly);
 }
 
 
 
 // =========================================================================
-// REP NOTIFIES
+// Player Weapon Detection
 // =========================================================================
-void AGPlayerCharacter::OnRep_WeaponOverlapped() {
+void AGPlayerCharacter::SetOverlappedWeapon(AGWeapon* weapon) {
+	// Changing this value will trigger the replication
+	this->OverlappingWeapon = weapon;
+	// This validation is only for the server, because the client will use the RepNotify to handle it.
+	// This also only works because I know only the server handles the weapon overlapping with the player,
+	// with this in mind, I can use the Locally controlled to check if the server is the one controlling to local controller
+	// this way I can also show the Pickup Widget to the player server. -Renan
+	if (this->IsLocallyControlled() && this->OverlappingWeapon) {
+		this->OverlappingWeapon->ShowInteractionHud(true);
+	}
+}
+
+void AGPlayerCharacter::OnRep_SetOverlappedWeapon() {
 	if (this->OverlappingWeapon) {
 		this->OverlappingWeapon->ShowInteractionHud(true);
 	}
@@ -58,7 +64,7 @@ void AGPlayerCharacter::OnRep_WeaponOverlapped() {
 
 
 // =========================================================================
-// CLASS METHODS
+// Player Locomotion
 // =========================================================================
 void AGPlayerCharacter::MovePlayer(float valueX, float valueY) {
 	if (valueX == 0 && valueY == 0) return;
@@ -84,14 +90,4 @@ void AGPlayerCharacter::StopSprint() {
 
 void AGPlayerCharacter::PerformJump() {
 	this->Jump();
-}
-
-
-
-// =========================================================================
-// Setters
-// =========================================================================
-void AGPlayerCharacter::SetOverlappedWeapon(AGWeapon* weapon) {
-	// this value change will trigger the Replication Delegate AGPlayerCharacter::GetLifetimeReplicatedProps 
-	this->OverlappingWeapon = weapon;
 }

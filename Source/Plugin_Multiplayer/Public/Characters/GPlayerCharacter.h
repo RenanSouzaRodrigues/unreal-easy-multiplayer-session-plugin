@@ -11,28 +11,9 @@ UCLASS()
 class PLUGIN_MULTIPLAYER_API AGPlayerCharacter : public ACharacter {
 	GENERATED_BODY()
 
-public:
-	UPROPERTY(EditAnywhere, Category="Actor Components")
-	TObjectPtr<class USpringArmComponent> CameraSpringArm;
-
-	UPROPERTY(EditAnywhere, Category="Actor Components")
-	TObjectPtr<class UCameraComponent> PlayerCamera;
-
-	UPROPERTY(EditAnywhere, Category="Actor Configuration")
-	float DefaultMovementSpeed { 450 };
-	
-	UPROPERTY(EditAnywhere, Category="Actor Configuration")
-	float SprintMovementSpeed { 800 };
-
-	// ==============================================================
-	// Replicated Variables
-	// ==============================================================
-	UPROPERTY(ReplicatedUsing=OnRep_WeaponOverlapped)
-	class AGWeapon* OverlappingWeapon;
-
-private:
-	bool bIsSprinting { false };
-	
+	// ================================================
+	// Unreal Methods
+	// ================================================
 public:
 	AGPlayerCharacter();
 	virtual void BeginPlay() override;
@@ -40,16 +21,53 @@ public:
 	// this function is where I register variables to be replicated **Everything using UPROPERTY(Replicated)**
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// =================================================================
-	// REP NOTIFIES
-	// =================================================================
+	
+	
+	// ================================================
+	// Actor Core Components
+	// ================================================
+public:
+	UPROPERTY(EditAnywhere, Category="Actor Components")
+	TObjectPtr<class USpringArmComponent> CameraSpringArm;
+
+	UPROPERTY(EditAnywhere, Category="Actor Components")
+	TObjectPtr<class UCameraComponent> PlayerCamera;
+	
+
+	
+	// ================================================
+	// Actor Properties
+	// ================================================
+public:
+	UPROPERTY(EditAnywhere, Category="Actor Configuration")
+	float DefaultMovementSpeed { 450 };
+	
+	UPROPERTY(EditAnywhere, Category="Actor Configuration")
+	float SprintMovementSpeed { 800 };
+
+
+	
+	// ==============================================================
+	// Player Weapon Detection
+	// ==============================================================
+public:
+	UPROPERTY(ReplicatedUsing=OnRep_SetOverlappedWeapon)
+	class AGWeapon* OverlappingWeapon;
+
+	void SetOverlappedWeapon(AGWeapon* weapon);
+
 	UFUNCTION()
-	void OnRep_WeaponOverlapped();
+	void OnRep_SetOverlappedWeapon();
 
+	
 
 	// =================================================================
-	// CLASS METHODS
+	// Player Locomotion
 	// =================================================================
+private:
+	bool bIsSprinting { false };
+	
+public:
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void MovePlayer(float valueX, float valueY);
 
@@ -65,8 +83,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void StopSprint();
 	
-	
-	// Getters and Setters
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
 	FORCEINLINE float GetPlayerVelocityLength() const { return this->GetVelocity().Length(); }
 
@@ -75,6 +91,4 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
 	FORCEINLINE bool IsPlayerInAir() const { return this->GetCharacterMovement()->IsFalling(); };
-	
-	void SetOverlappedWeapon(AGWeapon* weapon);
 };

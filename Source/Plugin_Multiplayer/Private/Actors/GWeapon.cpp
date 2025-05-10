@@ -1,14 +1,12 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Actors/GWeapon.h"
-
 #include "Characters/GPlayerCharacter.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 
-
 // =============================================================
-// LIFE CYCLE
+// Unreal Methods
 // =============================================================
 AGWeapon::AGWeapon() {
 	this->PrimaryActorTick.bCanEverTick = false;
@@ -53,7 +51,7 @@ void AGWeapon::BeginPlay() {
 
 
 // =============================================================
-// CLASS METHODS
+// Pickup Widget
 // =============================================================
 void AGWeapon::OnDetectPlayerSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
 	// validates if the pawn overlapping is the player character
