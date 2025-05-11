@@ -25,6 +25,7 @@ void UGCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 void UGCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UGCombatComponent, EquippedWeapon);
+	DOREPLIFETIME(UGCombatComponent, bIsAiming);
 }
 
 
@@ -43,4 +44,24 @@ void UGCombatComponent::EquipWeapon(AGWeapon* newWeapon) {
 	}
 	
 	this->EquippedWeapon->SetOwner(this->PlayerCharacter);
+}
+
+
+
+// ==================================================
+// Equip Aim Actions
+// ==================================================
+void UGCombatComponent::OnRep_SetAiming() {
+	if (this->PlayerCharacter) {
+		this->PlayerCharacter->UpdateMovementSpeed();
+	}
+}
+
+void UGCombatComponent::SetAiming(bool value) {
+	this->bIsAiming = value;
+}
+
+void UGCombatComponent::ServerSetAiming_Implementation(bool value) {
+	this->bIsAiming = value;
+	if (this->PlayerCharacter) this->PlayerCharacter->UpdateMovementSpeed();
 }

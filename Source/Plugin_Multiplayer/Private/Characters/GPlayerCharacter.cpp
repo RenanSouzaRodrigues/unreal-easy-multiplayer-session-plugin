@@ -35,10 +35,11 @@ void AGPlayerCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	if (this->CombatComponent) {
 		this->UpdateSpringArmTargetLength(
-			this->CombatComponent->bIsAiming ? this->SpringArmAimTargetArmLength :
-			this->SpringArmDefaultTargetArmLength,
+			this->CombatComponent->bIsAiming ? this->SpringArmAimTargetArmLength : this->SpringArmDefaultTargetArmLength,
 			DeltaTime
 		);
+	} else {
+		GEngine->AddOnScreenDebugMessage(-1, 0, FColor::Red, TEXT("Error"));
 	}
 } 
 
@@ -46,6 +47,7 @@ void AGPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	// on this macros I cant use the 'this' keyword to refence variables. -Renan
 	DOREPLIFETIME_CONDITION(AGPlayerCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(AGPlayerCharacter, bIsSprinting);
 }
 
 void AGPlayerCharacter::PostInitializeComponents() {
@@ -55,6 +57,82 @@ void AGPlayerCharacter::PostInitializeComponents() {
 		this->CombatComponent->PlayerCharacter = this;
 	}
 }
+
+
+
+// =========================================================================
+// Player Basic Movement
+// =========================================================================
+void AGPlayerCharacter::MovePlayer(float valueX, float valueY) {
+	if (valueX == 0 && valueY == 0) return;
+	this->AddMovementInput(this->GetActorForwardVector(), valueX);
+	this->AddMovementInput(this->GetActorRightVector(), valueY);
+}
+
+void AGPlayerCharacter::MoveCamera(float valueX, float valueY) {
+	if (valueX == 0 && valueY == 0) return;
+	this->AddControllerYawInput(valueX);
+	this->AddControllerPitchInput(valueY);
+}
+
+void AGPlayerCharacter::PerformJump() {
+	this->Jump();
+}
+
+
+
+// =================================================================
+// Player Sprint
+// =================================================================
+// always runs on server. -Renan
+void AGPlayerCharacter::SetIsSprinting(bool value) {
+	this->bIsSprinting = value;
+}
+
+// runs on client when bIsSprinting value changes. -Renan
+void AGPlayerCharacter::OnRep_SetIsSprinting() {
+	this->UpdateMovementSpeed();
+}
+
+void AGPlayerCharacter::UpdateMovementSpeed() {
+	if (this->IsPlayerAiming()) {
+		this->GetCharacterMovement()->MaxWalkSpeed = this->AimMovementSpeed;
+		return;
+	}
+	
+	this->GetCharacterMovement()->MaxWalkSpeed = this->bIsSprinting ? this->SprintMovementSpeed : this->DefaultMovementSpeed;
+}
+
+void AGPlayerCharacter::Sprint() {
+	if (this->HasAuthority()) {
+		this->SetIsSprinting(true);
+		this->UpdateMovementSpeed();
+		return;
+	}
+
+	this->ServerSprint();
+}
+
+void AGPlayerCharacter::ServerSprint_Implementation() {
+	this->SetIsSprinting(true);
+	this->UpdateMovementSpeed();
+}
+
+void AGPlayerCharacter::StopSprint() {
+	if (this->HasAuthority()) {
+		this->SetIsSprinting(false);
+		this->UpdateMovementSpeed();
+		return;
+	}
+
+	this->ServerStopSprint();
+}
+
+void AGPlayerCharacter::ServerStopSprint_Implementation() {
+	this->SetIsSprinting(false);
+	this->UpdateMovementSpeed();
+}
+
 
 
 // =========================================================================
@@ -89,58 +167,6 @@ void AGPlayerCharacter::OnRep_SetOverlappedWeapon(AGWeapon* lastWeapon) {
 }
 
 
-
-// =========================================================================
-// Player Locomotion
-// =========================================================================
-void AGPlayerCharacter::MovePlayer(float valueX, float valueY) {
-	if (valueX == 0 && valueY == 0) return;
-	this->AddMovementInput(this->GetActorForwardVector(), valueX);
-	this->AddMovementInput(this->GetActorRightVector(), valueY);
-}
-
-void AGPlayerCharacter::MoveCamera(float valueX, float valueY) {
-	if (valueX == 0 && valueY == 0) return;
-	this->AddControllerYawInput(valueX);
-	this->AddControllerPitchInput(valueY);
-}
-
-void AGPlayerCharacter::Sprint() {
-	if (this->HasAuthority()) {
-		if (this->CombatComponent && !this->CombatComponent->bIsAiming) {
-			this->GetCharacterMovement()->MaxWalkSpeed = this->SprintMovementSpeed;
-			return;	
-		}
-	}
-	this->ServerSprint();
-}
-
-void AGPlayerCharacter::ServerSprint_Implementation() {
-	if (this->CombatComponent && !this->CombatComponent->bIsAiming) {
-		this->GetCharacterMovement()->MaxWalkSpeed = this->SprintMovementSpeed;
-	}
-}
-
-void AGPlayerCharacter::StopSprint() {
-	if (this->HasAuthority()) {
-		if (this->CombatComponent && !this->CombatComponent->bIsAiming) {
-			this->GetCharacterMovement()->MaxWalkSpeed = this->DefaultMovementSpeed;
-		}
-		return;
-	}
-	this->ServerStopSprint();
-}
-
-void AGPlayerCharacter::ServerStopSprint_Implementation() {
-	this->GetCharacterMovement()->MaxWalkSpeed = this->DefaultMovementSpeed;
-}
-
-void AGPlayerCharacter::PerformJump() {
-	this->Jump();
-}
-
-
-
 // =========================================================================
 // Equip Weapon
 // =========================================================================
@@ -152,10 +178,10 @@ void AGPlayerCharacter::EquipWeapon() {
 		return;
 	}
 
-	this->Server_EquipWeapon();
+	this->ServerEquipWeapon();
 }
 
-void AGPlayerCharacter::Server_EquipWeapon_Implementation() {
+void AGPlayerCharacter::ServerEquipWeapon_Implementation() {
 	if (this->CombatComponent) {
 		this->CombatComponent->EquipWeapon(this->OverlappingWeapon);
 	}
@@ -172,15 +198,25 @@ bool AGPlayerCharacter::HasWeaponEquipped() const {
 // =========================================================================
 void AGPlayerCharacter::AimWeapon() {
 	if (this->CombatComponent && this->CombatComponent->EquippedWeapon) {
-		this->CombatComponent->bIsAiming = true;
-		this->GetCharacterMovement()->MaxWalkSpeed = this->AimMovementSpeed;
+		if (this->HasAuthority()) {
+			this->CombatComponent->SetAiming(true);
+			this->UpdateMovementSpeed();
+			return;
+		}
+
+		this->CombatComponent->ServerSetAiming(true);
 	}
 }
 
 void AGPlayerCharacter::StopAimWeapon() {
 	if (this->CombatComponent && this->CombatComponent->EquippedWeapon) {
-		this->CombatComponent->bIsAiming = false;
-		this->GetCharacterMovement()->MaxWalkSpeed = this->DefaultMovementSpeed;
+		if (this->HasAuthority()) {
+			this->CombatComponent->SetAiming(false);
+			this->UpdateMovementSpeed();
+			return;
+		}
+
+		this->CombatComponent->ServerSetAiming(false);
 	}	
 }
 

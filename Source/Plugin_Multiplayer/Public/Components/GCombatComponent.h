@@ -46,5 +46,15 @@ public:
 	// Equip Aim Actions
 	// ==================================================
 private:
+	UPROPERTY(ReplicatedUsing=OnRep_SetAiming)
 	bool bIsAiming { false };
+
+	UFUNCTION()
+	void OnRep_SetAiming();
+	
+protected:
+	void SetAiming(bool value);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetAiming(bool value);
 };

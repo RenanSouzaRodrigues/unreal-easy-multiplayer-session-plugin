@@ -49,7 +49,7 @@ public:
 	float SprintMovementSpeed { 800 };
 
 	UPROPERTY(EditAnywhere, Category="Actor Configuration")
-	float AimMovementSpeed { 300 };
+	float AimMovementSpeed { 200 };
 
 	UPROPERTY(EditAnywhere, Category="Actor Configuration")
 	float SpringArmDefaultTargetArmLength { 450 };
@@ -60,24 +60,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Actor Configuration")
 	float SpringArmUpdateSpeed { 10 };
 
-
-	
-	// ==============================================================
-	// Player Weapon Detection
-	// ==============================================================
-public:
-	UPROPERTY(ReplicatedUsing=OnRep_SetOverlappedWeapon)
-	class AGWeapon* OverlappingWeapon;
-
-	void SetOverlappedWeapon(AGWeapon* weapon);
-
-	UFUNCTION()
-	void OnRep_SetOverlappedWeapon(AGWeapon* lastWeaponPointer);
-
 	
 
 	// =================================================================
-	// Player Locomotion
+	// Player Basic Movement
 	// =================================================================
 public:
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
@@ -89,6 +75,29 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void PerformJump();
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
+	FORCEINLINE float GetPlayerVelocityLength() const { return this->GetVelocity().Length(); }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
+	FORCEINLINE bool IsPlayerInAir() const { return this->GetCharacterMovement()->IsFalling(); };
+
+
+	
+	// =================================================================
+	// Player Sprint
+	// =================================================================
+private:
+	UPROPERTY(ReplicatedUsing=OnRep_SetIsSprinting)
+	bool bIsSprinting { false };
+
+	void SetIsSprinting(bool value);
+	
+	UFUNCTION()
+	void OnRep_SetIsSprinting();
+
+public:
+	void UpdateMovementSpeed();
+	
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void Sprint();
 
@@ -100,14 +109,23 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerStopSprint();
+
 	
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	FORCEINLINE float GetPlayerVelocityLength() const { return this->GetVelocity().Length(); }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	FORCEINLINE bool IsPlayerInAir() const { return this->GetCharacterMovement()->IsFalling(); };
+	
 
+	// ==============================================================
+	// Player Weapon Detection
+	// ==============================================================
+public:
+	UPROPERTY(ReplicatedUsing=OnRep_SetOverlappedWeapon)
+	class AGWeapon* OverlappingWeapon;
 
+	void SetOverlappedWeapon(AGWeapon* weapon);
+
+	UFUNCTION()
+	void OnRep_SetOverlappedWeapon(AGWeapon* lastWeaponPointer);
+	
 	
 	// =========================================================================
 	// Equip Weapon
@@ -117,7 +135,7 @@ public:
 	void EquipWeapon();
 
 	UFUNCTION(Server, Reliable)
-	void Server_EquipWeapon();
+	void ServerEquipWeapon();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Equip Weapon")
 	bool HasWeaponEquipped() const;
