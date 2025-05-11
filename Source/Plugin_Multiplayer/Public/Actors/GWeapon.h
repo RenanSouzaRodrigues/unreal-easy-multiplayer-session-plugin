@@ -24,7 +24,7 @@ class PLUGIN_MULTIPLAYER_API AGWeapon : public AActor {
 public:
 	AGWeapon();
 	virtual void BeginPlay() override;
-
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	
 	// ==================================================
@@ -43,13 +43,20 @@ protected:
 
 	
 	// ==================================================
-	// Actor Properties
+	// Weapon State
 	// ==================================================
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_SetWeaponState)
 	EGWeaponState CurrentWeaponState { EGWeaponState::Default };
 
+public:
+	UFUNCTION(BlueprintCallable)
+	void SetWeaponState(EGWeaponState newState);
 
+protected:
+	UFUNCTION()
+	void OnRep_SetWeaponState(EGWeaponState lastState);
+	
 	
 	// ==================================================
 	// Pickup Widget

@@ -20,7 +20,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	// this function is where I register variables to be replicated **Everything using UPROPERTY(Replicated)**
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
+	virtual void PostInitializeComponents() override;
 	
 	
 	// ================================================
@@ -32,6 +32,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Actor Components")
 	TObjectPtr<class UCameraComponent> PlayerCamera;
+
+	UPROPERTY(EditAnywhere, Category="Actor Components")
+	TObjectPtr<class UGCombatComponent> CombatComponent;
 	
 
 	
@@ -44,6 +47,18 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category="Actor Configuration")
 	float SprintMovementSpeed { 800 };
+
+	UPROPERTY(EditAnywhere, Category="Actor Configuration")
+	float AimMovementSpeed { 300 };
+
+	UPROPERTY(EditAnywhere, Category="Actor Configuration")
+	float SpringArmDefaultTargetArmLength { 450 };
+	
+	UPROPERTY(EditAnywhere, Category="Actor Configuration")
+	float SpringArmAimTargetArmLength { 150 };
+
+	UPROPERTY(EditAnywhere, Category="Actor Configuration")
+	float SpringArmUpdateSpeed { 10 };
 
 
 	
@@ -64,9 +79,6 @@ public:
 	// =================================================================
 	// Player Locomotion
 	// =================================================================
-private:
-	bool bIsSprinting { false };
-	
 public:
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void MovePlayer(float valueX, float valueY);
@@ -80,15 +92,51 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void Sprint();
 
+	UFUNCTION(Server, Reliable)
+	void ServerSprint();
+
 	UFUNCTION(BlueprintCallable, Category="Player Locomotion")
 	void StopSprint();
+
+	UFUNCTION(Server, Reliable)
+	void ServerStopSprint();
 	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
 	FORCEINLINE float GetPlayerVelocityLength() const { return this->GetVelocity().Length(); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
-	FORCEINLINE bool IsPlayerSprinting() const { return this->bIsSprinting; }
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Getters")
 	FORCEINLINE bool IsPlayerInAir() const { return this->GetCharacterMovement()->IsFalling(); };
+
+
+	
+	// =========================================================================
+	// Equip Weapon
+	// =========================================================================
+public:
+	UFUNCTION(BlueprintCallable, Category="Equip Weapon")
+	void EquipWeapon();
+
+	UFUNCTION(Server, Reliable)
+	void Server_EquipWeapon();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category="Equip Weapon")
+	bool HasWeaponEquipped() const;
+
+
+	
+	// =========================================================================
+	// Aim Weapon
+	// =========================================================================
+public:
+	UFUNCTION(BlueprintCallable, Category="Aim Weapon")
+	void AimWeapon();
+
+	UFUNCTION(BlueprintCallable, Category="Aim Weapon")
+	void StopAimWeapon();
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	bool IsPlayerAiming() const;
+
+private:
+	void UpdateSpringArmTargetLength(float finalTargetLength, float deltaTime);
 };

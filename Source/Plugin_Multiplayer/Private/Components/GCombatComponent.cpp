@@ -1,0 +1,46 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#include "Components/GCombatComponent.h"
+
+#include "Actors/GWeapon.h"
+#include "Characters/GPlayerCharacter.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Net/UnrealNetwork.h"
+
+// ==================================================
+// Unreal Methods
+// ==================================================	
+UGCombatComponent::UGCombatComponent() {
+	PrimaryComponentTick.bCanEverTick = false;
+}
+
+void UGCombatComponent::BeginPlay() {
+	Super::BeginPlay();
+}
+
+void UGCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+void UGCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UGCombatComponent, EquippedWeapon);
+}
+
+
+// ==================================================
+// Equip Weapon Actions
+// ==================================================
+void UGCombatComponent::EquipWeapon(AGWeapon* newWeapon) {
+	if (this->PlayerCharacter == nullptr || newWeapon == nullptr) return;
+	
+	this->EquippedWeapon = newWeapon;
+	this->EquippedWeapon->SetWeaponState(EGWeaponState::Equipped);
+	
+	const USkeletalMeshSocket* weaponSocket = this->PlayerCharacter->GetMesh()->GetSocketByName(this->PlayerWeaponSocket);
+	if (weaponSocket) {
+		weaponSocket->AttachActor(this->EquippedWeapon, this->PlayerCharacter->GetMesh());
+	}
+	
+	this->EquippedWeapon->SetOwner(this->PlayerCharacter);
+}

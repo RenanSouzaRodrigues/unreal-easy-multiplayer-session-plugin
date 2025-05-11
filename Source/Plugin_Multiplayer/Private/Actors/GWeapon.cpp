@@ -4,6 +4,7 @@
 #include "Characters/GPlayerCharacter.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // =============================================================
 // Unreal Methods
@@ -49,13 +50,44 @@ void AGWeapon::BeginPlay() {
 	}
 }
 
+void AGWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// Replicates the weapon State to all the clients. -Renan
+	DOREPLIFETIME(AGWeapon, CurrentWeaponState)
+}
+
+
+
+// =============================================================
+// Weapon State
+// =============================================================
+void AGWeapon::SetWeaponState(EGWeaponState newState) {
+	// triggers the rep notify. -Renan
+	this->CurrentWeaponState = newState;
+
+	if (this->CurrentWeaponState == EGWeaponState::Equipped) {
+		this->ShowInteractionHud(false);
+		this->PlayerDetectionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		return;
+	}
+}
+
+void AGWeapon::OnRep_SetWeaponState(EGWeaponState lastState) {
+	if (this->CurrentWeaponState == EGWeaponState::Equipped) {
+		this->ShowInteractionHud(false);
+		return;
+	}
+}
+
 
 
 // =============================================================
 // Pickup Widget
 // =============================================================
 void AGWeapon::OnDetectPlayerSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	// validates if the pawn overlapping is the player character
+	if (this->CurrentWeaponState == EGWeaponState::Equipped) return;
+	
 	AGPlayerCharacter* playerCharacter = Cast<AGPlayerCharacter>(OtherActor);
 	if (playerCharacter) {
 		playerCharacter->SetOverlappedWeapon(this);
@@ -64,6 +96,8 @@ void AGWeapon::OnDetectPlayerSphereBeginOverlap(UPrimitiveComponent* OverlappedC
 }
 
 void AGWeapon::OnDetectPlayerSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex) {
+	if (this->CurrentWeaponState == EGWeaponState::Equipped) return;
+	
 	AGPlayerCharacter* playerCharacter = Cast<AGPlayerCharacter>(OtherActor);
 	if (playerCharacter) {
 		playerCharacter->SetOverlappedWeapon(nullptr);
