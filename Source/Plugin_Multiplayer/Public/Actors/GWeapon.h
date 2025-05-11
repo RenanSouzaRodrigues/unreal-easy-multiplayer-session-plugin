@@ -24,7 +24,7 @@ class PLUGIN_MULTIPLAYER_API AGWeapon : public AActor {
 public:
 	AGWeapon();
 	virtual void BeginPlay() override;
-
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	
 	// ==================================================
@@ -39,17 +39,24 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Actor Components")
 	TObjectPtr<class UWidgetComponent> PickupWidget;
-
+	
 
 	
 	// ==================================================
-	// Actor Properties
+	// Weapon State
 	// ==================================================
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, ReplicatedUsing=OnRep_SetWeaponState)
 	EGWeaponState CurrentWeaponState { EGWeaponState::Default };
 
+public:
+	UFUNCTION(BlueprintCallable)
+	void SetWeaponState(EGWeaponState newState);
 
+protected:
+	UFUNCTION()
+	void OnRep_SetWeaponState(EGWeaponState lastState);
+	
 	
 	// ==================================================
 	// Pickup Widget
@@ -57,6 +64,9 @@ protected:
 public:
 	UFUNCTION()
 	virtual void OnDetectPlayerSphereBeginOverlap(class UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	virtual void OnDetectPlayerSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex);
 	
 	UFUNCTION(BlueprintCallable)
 	void ShowInteractionHud(bool value); // This is a bad way of doing things, but replication is on the character at this points. -Renan

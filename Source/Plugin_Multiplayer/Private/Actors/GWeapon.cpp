@@ -4,6 +4,7 @@
 #include "Characters/GPlayerCharacter.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // =============================================================
 // Unreal Methods
@@ -18,6 +19,7 @@ AGWeapon::AGWeapon() {
 	this->SetRootComponent(this->WeaponMesh);
 	this->WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	this->WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+
 	
 	// This is the initial state of collision so players dont trip on the gun. -Renan 
 	this->WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -44,7 +46,37 @@ void AGWeapon::BeginPlay() {
 		this->PlayerDetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		this->PlayerDetectionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		this->PlayerDetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereBeginOverlap);
-		// this->PlayerDetectionSphere->OnComponentEndOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereEndOverlap);
+		this->PlayerDetectionSphere->OnComponentEndOverlap.AddDynamic(this, &AGWeapon::OnDetectPlayerSphereEndOverlap);
+	}
+}
+
+void AGWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// Replicates the weapon State to all the clients. -Renan
+	DOREPLIFETIME(AGWeapon, CurrentWeaponState)
+}
+
+
+
+// =============================================================
+// Weapon State
+// =============================================================
+void AGWeapon::SetWeaponState(EGWeaponState newState) {
+	// triggers the rep notify. -Renan
+	this->CurrentWeaponState = newState;
+
+	if (this->CurrentWeaponState == EGWeaponState::Equipped) {
+		this->ShowInteractionHud(false);
+		this->PlayerDetectionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		return;
+	}
+}
+
+void AGWeapon::OnRep_SetWeaponState(EGWeaponState lastState) {
+	if (this->CurrentWeaponState == EGWeaponState::Equipped) {
+		this->ShowInteractionHud(false);
+		return;
 	}
 }
 
@@ -54,13 +86,23 @@ void AGWeapon::BeginPlay() {
 // Pickup Widget
 // =============================================================
 void AGWeapon::OnDetectPlayerSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	// validates if the pawn overlapping is the player character
+	if (this->CurrentWeaponState == EGWeaponState::Equipped) return;
+	
 	AGPlayerCharacter* playerCharacter = Cast<AGPlayerCharacter>(OtherActor);
 	if (playerCharacter) {
 		playerCharacter->SetOverlappedWeapon(this);
 		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Black, TEXT("player overlapped with weapon"));
 	}
-} 
+}
+
+void AGWeapon::OnDetectPlayerSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex) {
+	if (this->CurrentWeaponState == EGWeaponState::Equipped) return;
+	
+	AGPlayerCharacter* playerCharacter = Cast<AGPlayerCharacter>(OtherActor);
+	if (playerCharacter) {
+		playerCharacter->SetOverlappedWeapon(nullptr);
+	}
+}
 
 void AGWeapon::ShowInteractionHud(bool value) {
 	if (this->PickupWidget) this->PickupWidget->SetVisibility(value);
