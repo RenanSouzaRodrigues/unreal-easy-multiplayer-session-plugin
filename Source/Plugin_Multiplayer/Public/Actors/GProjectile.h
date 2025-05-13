@@ -26,4 +26,7 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Actor Components")
 	TObjectPtr<class UBoxComponent> CollisionBox;
+
+	UPROPERTY(EditAnywhere, Category="Actor Components")
+	TObjectPtr<class UProjectileMovementComponent> ProjectileMovementComponent;
 };

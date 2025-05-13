@@ -92,5 +92,5 @@ public:
 	// Weapon Fire
 	// ==================================================
 public:
-	void Fire();
+	virtual void Fire(const FVector& hitTarget);
 };

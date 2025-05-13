@@ -245,11 +245,6 @@ void AGPlayerCharacter::UpdateSpringArmTargetLength(float finalTargetLength, flo
 // =========================================================================
 void AGPlayerCharacter::FireWeapon() {
 	if (this->CombatComponent) {
-		if (this->HasAuthority()) {
-			this->CombatComponent->FireWeapon();
-			return;
-		}
-
 		this->CombatComponent->ServerFireWeapon();
 	}
 }

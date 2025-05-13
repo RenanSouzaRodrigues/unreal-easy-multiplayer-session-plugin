@@ -17,4 +17,23 @@ public:
 	AGProjectileWeapon();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+
+
+
+	// ==============================================
+	// Actor Components
+	// ==============================================
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class USceneComponent> ProjectSpawnLocation; 
+	
+
+	
+	// ==============================================
+	// Actor Properties
+	// ==============================================
+public:
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AGProjectile> WeaponProjectile;
+
+	virtual void Fire(const FVector& hitTarget) override;
 };

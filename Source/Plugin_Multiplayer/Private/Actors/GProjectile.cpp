@@ -3,6 +3,7 @@
 #include "Actors/GProjectile.h"
 
 #include "Components/BoxComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 // ===================================================
 // Unreal Methods
@@ -17,6 +18,9 @@ AGProjectile::AGProjectile() {
 	this->CollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	this->CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Vehicle, ECollisionResponse::ECR_Block);
 	this->CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+
+	this->ProjectileMovementComponent = this->CreateDefaultSubobject<UProjectileMovementComponent>("Projectile Movement Component");
+	this->ProjectileMovementComponent->bRotationFollowsVelocity = true;
 }
 
 void AGProjectile::BeginPlay() {

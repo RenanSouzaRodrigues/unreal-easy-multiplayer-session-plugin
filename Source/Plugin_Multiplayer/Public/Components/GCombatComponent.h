@@ -14,13 +14,13 @@ class PLUGIN_MULTIPLAYER_API UGCombatComponent : public UActorComponent {
 	// Unreal Methods
 	// ==================================================	
 public:
+	// This component can only be used for the player character, there is no problem to make it a friend class. -Renan
+	friend class AGPlayerCharacter;
+	
 	UGCombatComponent();
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
-	// This component can only be used for the player character, there is no problem to make it a friend class. -Renan
-	friend class AGPlayerCharacter;
 
 	
 	
@@ -63,9 +63,16 @@ protected:
 	// ==================================================
 	// Fire Weapon Actions
 	// ==================================================
+private:
+	FHitResult TraceHitResult;
+	FVector TraceHitTarget;
+	
 protected:
-	void FireWeapon();
-
 	UFUNCTION(Server, Reliable)
 	void ServerFireWeapon();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastFireWeapon();
+
+	void TraceProjectileHitDestination(FHitResult& hitResult);
 };
