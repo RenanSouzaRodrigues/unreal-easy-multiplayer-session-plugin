@@ -63,25 +63,6 @@ void UGCombatComponent::SetAiming(bool value) {
 	this->bIsAiming = value;
 }
 
-void UGCombatComponent::TraceProjectileHitDestination(FHitResult& hitResult) {
-	if (this->PlayerCharacter) {
-		FVector startLocation = this->PlayerCharacter->PlayerCamera->GetComponentLocation();
-		FVector endLocation = startLocation + (this->PlayerCharacter->PlayerCamera->GetForwardVector() * 10000.f);
-		
-		bool bHit = this->GetWorld()->LineTraceSingleByChannel(hitResult, startLocation, endLocation, ECollisionChannel::ECC_Visibility);
-
-		if (!hitResult.bBlockingHit) {
-			hitResult.ImpactPoint = endLocation;
-			this->TraceHitTarget = endLocation;
-			return;
-		}
-
-		this->TraceHitTarget = hitResult.ImpactPoint;
-		DrawDebugSphere(this->GetWorld(), hitResult.ImpactPoint, 32, 8, FColor::Red);
-	}
-	
-}
-
 void UGCombatComponent::ServerSetAiming_Implementation(bool value) {
 	this->bIsAiming = value;
 	if (this->PlayerCharacter) this->PlayerCharacter->UpdateMovementSpeed();
@@ -101,4 +82,22 @@ void UGCombatComponent::MulticastFireWeapon_Implementation() {
 
 void UGCombatComponent::ServerFireWeapon_Implementation() {
 	this->MulticastFireWeapon();
+}
+
+void UGCombatComponent::TraceProjectileHitDestination(FHitResult& hitResult) {
+	if (this->PlayerCharacter) {
+		FVector startLocation = this->PlayerCharacter->PlayerCamera->GetComponentLocation();
+		FVector endLocation = startLocation + (this->PlayerCharacter->PlayerCamera->GetForwardVector() * 10000.f);
+		
+		bool bHit = this->GetWorld()->LineTraceSingleByChannel(hitResult, startLocation, endLocation, ECollisionChannel::ECC_Visibility);
+
+		if (!hitResult.bBlockingHit) {
+			hitResult.ImpactPoint = endLocation;
+			this->TraceHitTarget = endLocation;
+			return;
+		}
+
+		this->TraceHitTarget = hitResult.ImpactPoint;
+		DrawDebugSphere(this->GetWorld(), hitResult.ImpactPoint, 8, 8, FColor::Red);
+	}
 }
