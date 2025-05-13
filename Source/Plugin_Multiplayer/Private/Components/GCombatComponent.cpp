@@ -65,3 +65,20 @@ void UGCombatComponent::ServerSetAiming_Implementation(bool value) {
 	this->bIsAiming = value;
 	if (this->PlayerCharacter) this->PlayerCharacter->UpdateMovementSpeed();
 }
+
+
+
+// ==================================================
+// Fire Weapon Actions
+// ==================================================
+void UGCombatComponent::FireWeapon() {
+	if (this->EquippedWeapon && this->bIsAiming) {
+		this->EquippedWeapon->Fire();
+	}
+}
+
+void UGCombatComponent::ServerFireWeapon_Implementation() {
+	if (this->EquippedWeapon && this->bIsAiming) {
+		this->EquippedWeapon->Fire();
+	}
+}

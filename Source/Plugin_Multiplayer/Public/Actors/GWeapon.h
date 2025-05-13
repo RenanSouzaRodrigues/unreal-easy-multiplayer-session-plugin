@@ -57,6 +57,7 @@ protected:
 	UFUNCTION()
 	void OnRep_SetWeaponState(EGWeaponState lastState);
 	
+
 	
 	// ==================================================
 	// Pickup Widget
@@ -70,4 +71,12 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	void ShowInteractionHud(bool value); // This is a bad way of doing things, but replication is on the character at this points. -Renan
+
+
+
+	// ==================================================
+	// Weapon Fire
+	// ==================================================
+public:
+	void Fire();
 };

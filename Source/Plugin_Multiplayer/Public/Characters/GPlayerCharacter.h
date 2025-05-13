@@ -126,6 +126,7 @@ public:
 	UFUNCTION()
 	void OnRep_SetOverlappedWeapon(AGWeapon* lastWeaponPointer);
 	
+
 	
 	// =========================================================================
 	// Equip Weapon
@@ -157,4 +158,13 @@ public:
 
 private:
 	void UpdateSpringArmTargetLength(float finalTargetLength, float deltaTime);
+	
+
+	
+	// =========================================================================
+	// Fire Weapon
+	// =========================================================================
+public:
+	UFUNCTION(BlueprintCallable, Category="Fire Weapon")
+	void FireWeapon();
 };

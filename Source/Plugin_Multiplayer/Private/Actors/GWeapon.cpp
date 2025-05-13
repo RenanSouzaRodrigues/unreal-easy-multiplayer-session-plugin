@@ -107,3 +107,10 @@ void AGWeapon::OnDetectPlayerSphereEndOverlap(UPrimitiveComponent* OverlappedCom
 void AGWeapon::ShowInteractionHud(bool value) {
 	if (this->PickupWidget) this->PickupWidget->SetVisibility(value);
 }
+
+
+
+// ==================================================
+// Weapon Fire
+// ==================================================
+void AGWeapon::Fire() {}

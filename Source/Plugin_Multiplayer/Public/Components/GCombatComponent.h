@@ -57,4 +57,15 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool value);
+
+
+
+	// ==================================================
+	// Fire Weapon Actions
+	// ==================================================
+protected:
+	void FireWeapon();
+
+	UFUNCTION(Server, Reliable)
+	void ServerFireWeapon();
 };
