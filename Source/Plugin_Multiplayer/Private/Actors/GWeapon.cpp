@@ -113,4 +113,8 @@ void AGWeapon::ShowInteractionHud(bool value) {
 // ==================================================
 // Weapon Fire
 // ==================================================
-void AGWeapon::Fire() {}
+void AGWeapon::Fire() {
+	// validates if the weapon has bullets
+	// fires the weapon
+	// remove one ammo from weapon
+}

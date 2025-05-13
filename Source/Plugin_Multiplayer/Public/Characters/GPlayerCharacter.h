@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Actors/GWeapon.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GPlayerCharacter.generated.h"
@@ -167,10 +168,19 @@ private:
 private:
 	UPROPERTY(EditAnywhere, Category="Actor Animations")
 	TObjectPtr<class UAnimMontage> FireAnimationMontage;
+
+	UPROPERTY(EditAnywhere, Category="Actor Animations")
+	float defaultShootMontagePlayRate { 1.f };
+
+	UPROPERTY(EditAnywhere, Category="Actor Animations")
+	float assaultShootMontagePlayRate { 2.5f };
+
+	UPROPERTY(EditAnywhere, Category="Actor Animations")
+	float rocketLaucherShootMontatePlayRate { 0.6 };
 	
 public:
 	UFUNCTION(BlueprintCallable, Category="Fire Weapon")
 	void FireWeapon();
 	
-	void PlayFireMontage();
+	void PlayFireMontage(EGWeaponFireType fireType);
 };

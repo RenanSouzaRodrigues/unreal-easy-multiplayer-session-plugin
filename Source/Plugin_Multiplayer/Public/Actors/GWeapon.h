@@ -14,6 +14,14 @@ enum class EGWeaponState : uint8 {
 	Dropped,
 };
 
+// Enum used to define the weapon type of fire
+UENUM(Blueprintable, BlueprintType)
+enum class EGWeaponFireType : uint8 {
+	Rifle,
+	Assault,
+	Rocket
+};
+
 UCLASS()
 class PLUGIN_MULTIPLAYER_API AGWeapon : public AActor {
 	GENERATED_BODY()
@@ -39,6 +47,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Actor Components")
 	TObjectPtr<class UWidgetComponent> PickupWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Actor Components")
+	EGWeaponFireType WeaponFireType { EGWeaponFireType::Rifle };
+
+public:
+	FORCEINLINE EGWeaponFireType GetWeaponFireType() { return this->WeaponFireType; }
 	
 
 	

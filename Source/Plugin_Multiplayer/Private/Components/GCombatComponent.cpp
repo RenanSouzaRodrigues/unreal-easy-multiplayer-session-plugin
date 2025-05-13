@@ -74,11 +74,17 @@ void UGCombatComponent::ServerSetAiming_Implementation(bool value) {
 void UGCombatComponent::FireWeapon() {
 	if (this->EquippedWeapon && this->bIsAiming) {
 		this->EquippedWeapon->Fire();
+		if (this->PlayerCharacter) {
+			this->PlayerCharacter->PlayFireMontage(this->EquippedWeapon->GetWeaponFireType());
+		}
 	}
 }
 
 void UGCombatComponent::ServerFireWeapon_Implementation() {
 	if (this->EquippedWeapon && this->bIsAiming) {
 		this->EquippedWeapon->Fire();
+		if (this->PlayerCharacter) {
+			this->PlayerCharacter->PlayFireMontage(this->EquippedWeapon->GetWeaponFireType());
+		}
 	}
 }

@@ -254,9 +254,12 @@ void AGPlayerCharacter::FireWeapon() {
 	}
 }
 
-void AGPlayerCharacter::PlayFireMontage() {
+void AGPlayerCharacter::PlayFireMontage(EGWeaponFireType fireType) {
 	UAnimInstance* animInstance = this->GetMesh()->GetAnimInstance();
 	if (animInstance && this->FireAnimationMontage) {
-
+		float playRate = this->defaultShootMontagePlayRate;
+		if (fireType == EGWeaponFireType::Assault) playRate = this->assaultShootMontagePlayRate;
+		if (fireType == EGWeaponFireType::Rocket) playRate = this->rocketLaucherShootMontatePlayRate;
+		animInstance->Montage_Play(this->FireAnimationMontage, playRate);
 	}
 }
