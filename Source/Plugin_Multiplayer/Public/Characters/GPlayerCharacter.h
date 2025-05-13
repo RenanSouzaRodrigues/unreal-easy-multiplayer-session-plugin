@@ -164,7 +164,13 @@ private:
 	// =========================================================================
 	// Fire Weapon
 	// =========================================================================
+private:
+	UPROPERTY(EditAnywhere, Category="Actor Animations")
+	TObjectPtr<class UAnimMontage> FireAnimationMontage;
+	
 public:
 	UFUNCTION(BlueprintCallable, Category="Fire Weapon")
 	void FireWeapon();
+	
+	void PlayFireMontage();
 };

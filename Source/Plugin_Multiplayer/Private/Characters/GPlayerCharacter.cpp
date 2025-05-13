@@ -253,3 +253,10 @@ void AGPlayerCharacter::FireWeapon() {
 		this->CombatComponent->ServerFireWeapon();
 	}
 }
+
+void AGPlayerCharacter::PlayFireMontage() {
+	UAnimInstance* animInstance = this->GetMesh()->GetAnimInstance();
+	if (animInstance && this->FireAnimationMontage) {
+
+	}
+}
