@@ -18,6 +18,8 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION()
+	virtual void OnProjectileHit(class UPrimitiveComponent* hitComponent, AActor* otherActor, UPrimitiveComponent* otherComponent, FVector normalImpulse, const FHitResult& hitResult)
 	
 	
 	// ===================================================
