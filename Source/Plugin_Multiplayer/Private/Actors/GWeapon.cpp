@@ -113,7 +113,7 @@ void AGWeapon::ShowInteractionHud(bool value) {
 // ==================================================
 // Weapon Fire
 // ==================================================
-void AGWeapon::Fire(const FVector& hitTarget) {
+void AGWeapon::Fire(const FVector_NetQuantize& hitTarget) {
 	// validates if the weapon has bullets
 	// fires the weapon
 	// remove one ammo from weapon

@@ -21,7 +21,6 @@ void UGCombatComponent::BeginPlay() {
 
 void UGCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	this->TraceProjectileHitDestination(TraceHitResult);
 }
 
 void UGCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
@@ -73,15 +72,15 @@ void UGCombatComponent::ServerSetAiming_Implementation(bool value) {
 // ==================================================
 // Fire Weapon Actions
 // ==================================================
-void UGCombatComponent::MulticastFireWeapon_Implementation() {
+void UGCombatComponent::MulticastFireWeapon_Implementation(const FVector_NetQuantize& hitTarget) {
 	if (this->EquippedWeapon && this->bIsAiming) {
-		this->EquippedWeapon->Fire(this->TraceHitTarget);
+		this->EquippedWeapon->Fire(hitTarget);
 		if (this->PlayerCharacter) this->PlayerCharacter->PlayFireMontage(this->EquippedWeapon->GetWeaponFireType());
 	}
 }
 
-void UGCombatComponent::ServerFireWeapon_Implementation() {
-	this->MulticastFireWeapon();
+void UGCombatComponent::ServerFireWeapon_Implementation(const FVector_NetQuantize& hitTarget) {
+	this->MulticastFireWeapon(hitTarget);
 }
 
 void UGCombatComponent::TraceProjectileHitDestination(FHitResult& hitResult) {
@@ -90,14 +89,11 @@ void UGCombatComponent::TraceProjectileHitDestination(FHitResult& hitResult) {
 		FVector endLocation = startLocation + (this->PlayerCharacter->PlayerCamera->GetForwardVector() * 10000.f);
 		
 		bool bHit = this->GetWorld()->LineTraceSingleByChannel(hitResult, startLocation, endLocation, ECollisionChannel::ECC_Visibility);
-
+		
 		if (!hitResult.bBlockingHit) {
 			hitResult.ImpactPoint = endLocation;
-			this->TraceHitTarget = endLocation;
-			return;
 		}
-
-		this->TraceHitTarget = hitResult.ImpactPoint;
-		DrawDebugSphere(this->GetWorld(), hitResult.ImpactPoint, 8, 8, FColor::Red);
+		
+		DrawDebugSphere(this->GetWorld(), hitResult.ImpactPoint, 8, 8, FColor::Red, true);
 	}
 }

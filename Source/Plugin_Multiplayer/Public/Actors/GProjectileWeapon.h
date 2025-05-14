@@ -35,5 +35,5 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AGProjectile> WeaponProjectile;
 
-	virtual void Fire(const FVector& hitTarget) override;
+	virtual void Fire(const FVector_NetQuantize& hitTarget) override;
 };

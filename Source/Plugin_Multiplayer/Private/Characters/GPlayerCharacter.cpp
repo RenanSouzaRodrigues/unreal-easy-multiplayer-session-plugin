@@ -167,6 +167,7 @@ void AGPlayerCharacter::OnRep_SetOverlappedWeapon(AGWeapon* lastWeapon) {
 }
 
 
+
 // =========================================================================
 // Equip Weapon
 // =========================================================================
@@ -244,8 +245,10 @@ void AGPlayerCharacter::UpdateSpringArmTargetLength(float finalTargetLength, flo
 // Fire Weapon
 // =========================================================================
 void AGPlayerCharacter::FireWeapon() {
-	if (this->CombatComponent) {
-		this->CombatComponent->ServerFireWeapon();
+	if (this->CombatComponent && this->CombatComponent->EquippedWeapon) {
+		FHitResult hitResult;
+		this->CombatComponent->TraceProjectileHitDestination(hitResult);
+		this->CombatComponent->ServerFireWeapon(hitResult.ImpactPoint);
 	}
 }
 

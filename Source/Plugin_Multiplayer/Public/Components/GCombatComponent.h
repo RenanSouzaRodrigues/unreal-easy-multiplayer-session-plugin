@@ -63,16 +63,12 @@ protected:
 	// ==================================================
 	// Fire Weapon Actions
 	// ==================================================
-private:
-	FHitResult TraceHitResult;
-	FVector TraceHitTarget;
-	
 protected:
 	UFUNCTION(Server, Reliable)
-	void ServerFireWeapon();
+	void ServerFireWeapon(const FVector_NetQuantize& hitTarget);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastFireWeapon();
+	void MulticastFireWeapon(const FVector_NetQuantize& hitTarget);
 
 	void TraceProjectileHitDestination(FHitResult& hitResult);
 };

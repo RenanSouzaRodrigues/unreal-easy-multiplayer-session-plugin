@@ -22,7 +22,7 @@ void AGProjectileWeapon::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 }
 
-void AGProjectileWeapon::Fire(const FVector& hitTarget) {
+void AGProjectileWeapon::Fire(const FVector_NetQuantize& hitTarget) {
 	Super::Fire(hitTarget);
 
 	APawn* pawnInstigator = Cast<APawn>(this->GetOwner());
