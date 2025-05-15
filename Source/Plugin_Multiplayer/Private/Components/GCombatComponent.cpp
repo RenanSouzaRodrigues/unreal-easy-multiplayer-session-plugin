@@ -93,7 +93,5 @@ void UGCombatComponent::TraceProjectileHitDestination(FHitResult& hitResult) {
 		if (!hitResult.bBlockingHit) {
 			hitResult.ImpactPoint = endLocation;
 		}
-		
-		DrawDebugSphere(this->GetWorld(), hitResult.ImpactPoint, 8, 8, FColor::Red, true);
 	}
 }

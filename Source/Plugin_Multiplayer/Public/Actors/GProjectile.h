@@ -18,8 +18,6 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION()
-	virtual void OnProjectileHit(class UPrimitiveComponent* hitComponent, AActor* otherActor, UPrimitiveComponent* otherComponent, FVector normalImpulse, const FHitResult& hitResult)
 	
 	
 	// ===================================================
@@ -31,4 +29,23 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Actor Components")
 	TObjectPtr<class UProjectileMovementComponent> ProjectileMovementComponent;
+
+	
+
+	// ===================================================
+	// Projectile Hit
+	// ===================================================
+protected:
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class UNiagaraSystem> TraceParticles;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UNiagaraSystem> HitParticles;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class USoundBase> HitSound;
+	
+public:
+	UFUNCTION()
+	virtual void OnProjectileHit(class UPrimitiveComponent* hitComponent, AActor* otherActor, UPrimitiveComponent* otherComponent, FVector normalImpulse, const FHitResult& hitResult);
 };
